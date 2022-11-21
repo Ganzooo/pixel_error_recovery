@@ -1,0 +1,5 @@
+name: 'ecbsr' 
+m_ecbsr: 4
+c_ecbsr: 8
+idt_ecbsr: 0
+act_type: 'relu' #prelu

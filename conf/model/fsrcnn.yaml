@@ -1,0 +1,2 @@
+name: 'fsrcnn' 
+act_type: 'relu' #prelu

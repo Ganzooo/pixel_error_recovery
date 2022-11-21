@@ -1,0 +1,33 @@
+## data specification
+### Train dataset.
+noised_img_path_pr0_5: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_final/pr_0_5/'
+gt_img_path_pr0_5: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_final/pr_0_5/index/'
+noised_img_path_pr1: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_final/pr_1_0/'
+gt_img_path_pr1: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_final/pr_1_0/index/'
+
+noised_img_path_cl2: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_final/cluster_2/'
+gt_img_path_cl2: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_final/cluster_2/index/'
+noised_img_path_cl3: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_final/cluster_3/'
+gt_img_path_cl3: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_final/cluster_3/index/'
+
+noised_img_path_col1: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_final/col_1/'
+gt_img_path_col1: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_final/col_1/index/'
+noised_img_path_col2: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_final/col_2/'
+gt_img_path_col2: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_final/col_2/index/'
+
+### Val dataset.
+noised_img_path_val_pr0_5: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_val_final/pr_0_5/'
+gt_img_path_val_pr0_5: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_val_final/pr_0_5/index/'
+noised_img_path_val_pr1: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_val_final/pr_1_0/'
+gt_img_path_val_pr1: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_val_final/pr_1_0/index/'
+
+noised_img_path_val_cl2: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_val_final/cluster_2/'
+gt_img_path_val_cl2: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_val_final/cluster_2/index/'
+noised_img_path_val_cl3: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_val_final/cluster_3/'
+gt_img_path_val_cl3: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_val_final/cluster_3/index/'
+
+noised_img_path_val_col1: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_val_final/col_1/'
+gt_img_path_val_col1: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_val_final/col_1/index/'
+noised_img_path_val_col2: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_val_final/col_2/'
+gt_img_path_val_col2: '/dataset/2022_Demo_Folder/VariableFocus/noise_paper_val_final/col_2/index/'
+
