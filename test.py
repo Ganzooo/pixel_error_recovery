@@ -235,20 +235,24 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 #print("Acc:", acc_rec)
                 
                 #Reconstruct
-                _imgPred = np.full((1028, 2052, 3), (128,128,128))
-                _imgPred[1:1025,1:2049,:] = _img
+                nH = _img.shape[0]
+                nW = _img.shape[1]
+                #print(nH, nW)
+                _imgPred = np.full((nH+4, nW+4, 3), (128,128,128))
+                _imgPred[1:nH+1,1:nW+1,:] = _img
+                #_imgPred = np.full((1028, 2052, 3), (128,128,128))
+                #_imgPred[1:1025,1:2049,:] = _img
                 index = np.where(_pred_one==1)
                 _index = np.add(index,1)
                 for _id0, _id1 in zip(_index[0,:], _index[1,:]):
                     crop_neighbor = np.array(_imgPred[_id0-1:_id0+1,_id1-1:_id1+1,:])
                     _imgPred[_id0,_id1,:] = (median(np.sort(crop_neighbor[:,:,0].ravel())),median(np.sort(crop_neighbor[:,:,1].ravel())),median(np.sort(crop_neighbor[:,:,2].ravel())))
-                temp0 = np.concatenate((_gt, _img, _pred, _imgPred[1:1025,1:2049,:]),axis=1)
+                temp0 = np.concatenate((_gt, _img, _pred, _imgPred[1:nH+1,1:nW+1,:]),axis=1)
                 save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'), temp0.astype(np.uint8), color_domain='rgb')
                 save_img(os.path.join(dirPath, str(epoch), fname + '_gt.jpg'), _gt.astype(np.uint8), color_domain='rgb')
                 save_img(os.path.join(dirPath, str(epoch), fname + '_img.jpg'), _img.astype(np.uint8), color_domain='rgb')
                 save_img(os.path.join(dirPath, str(epoch), fname + '_pred.jpg'), _pred.astype(np.uint8), color_domain='rgb')
                 save_img(os.path.join(dirPath, str(epoch), fname + '_img_pred.jpg'), _imgPred.astype(np.uint8), color_domain='rgb')
-                
                 
                 file_id = str(name) + '_munster_' + str(int(_idx)).zfill(6) + '_000019_leftImg8bit.txt'
                 with open(os.path.join(dirPath,file_id), "w") as file:
