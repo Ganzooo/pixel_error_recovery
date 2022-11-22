@@ -30,7 +30,7 @@ NUM_CORES = args.num_cores
 COLOR_RANDOM = (0,0,0)
 COLOR_DEAD_PIXEL_BLACK = 0
 COLOR_DEAD_PIXEL_WHITE = 255
-RESIZE_IMG = False
+RESIZE_IMG = True
 GRAY_IMG = True
 
 __DEBUG__ = 0
@@ -46,17 +46,17 @@ os.makedirs(tar + '/pr_1_0/')
 os.makedirs(tar + '/pr_1_0/index/')
 os.makedirs(tar + '/pr_1_0/index_color/')
 
-os.makedirs(tar + '/pr_5_0/')
-os.makedirs(tar + '/pr_5_0/index/')
-os.makedirs(tar + '/pr_5_0/index_color/')
+# os.makedirs(tar + '/pr_5_0/')
+# os.makedirs(tar + '/pr_5_0/index/')
+# os.makedirs(tar + '/pr_5_0/index_color/')
 
-os.makedirs(tar + '/pr_10_0/')
-os.makedirs(tar + '/pr_10_0/index/')
-os.makedirs(tar + '/pr_10_0/index_color/')
+# os.makedirs(tar + '/pr_10_0/')
+# os.makedirs(tar + '/pr_10_0/index/')
+# os.makedirs(tar + '/pr_10_0/index_color/')
 
-os.makedirs(tar + '/pr_30_0/')
-os.makedirs(tar + '/pr_30_0/index/')
-os.makedirs(tar + '/pr_30_0/index_color/')
+# os.makedirs(tar + '/pr_30_0/')
+# os.makedirs(tar + '/pr_30_0/index/')
+# os.makedirs(tar + '/pr_30_0/index_color/')
 
 os.makedirs(tar + '/col_1/')
 os.makedirs(tar + '/col_1/index/')
@@ -66,14 +66,6 @@ os.makedirs(tar + '/col_2/')
 os.makedirs(tar + '/col_2/index/')
 os.makedirs(tar + '/col_2/index_color/')
 
-os.makedirs(tar + '/row_1/')
-os.makedirs(tar + '/row_1/index/')
-os.makedirs(tar + '/row_1/index_color/')
-
-os.makedirs(tar + '/row_2/')
-os.makedirs(tar + '/row_2/index/')
-os.makedirs(tar + '/row_2/index_color/')
-
 os.makedirs(tar + '/cluster_2/')
 os.makedirs(tar + '/cluster_2/index/')
 os.makedirs(tar + '/cluster_2/index_color/')
@@ -81,10 +73,6 @@ os.makedirs(tar + '/cluster_2/index_color/')
 os.makedirs(tar + '/cluster_3/')
 os.makedirs(tar + '/cluster_3/index')
 os.makedirs(tar + '/cluster_3/index_color')
-
-os.makedirs(tar + '/cluster_5/')
-os.makedirs(tar + '/cluster_5/index')
-os.makedirs(tar + '/cluster_5/index_color')
 
 #get sorted folders
 imgDir = natsorted(glob(os.path.join(src, '*.png')))
@@ -414,19 +402,19 @@ def noise_add_row(iter, row):
 
 #for i in tqdm(range(0,len(img_files))):
 #    noise_add_percent(i, per=5.0)
-Parallel(n_jobs=NUM_CORES)(delayed(noise_add_percent)(i, per=5.0) for i in tqdm(range(len(img_files))))
+#Parallel(n_jobs=NUM_CORES)(delayed(noise_add_percent)(i, per=5.0) for i in tqdm(range(len(img_files))))
 Parallel(n_jobs=NUM_CORES)(delayed(noise_add_percent)(i, per=1.0) for i in tqdm(range(len(img_files))))
 Parallel(n_jobs=NUM_CORES)(delayed(noise_add_percent)(i, per=0.5) for i in tqdm(range(len(img_files))))
 
 Parallel(n_jobs=NUM_CORES)(delayed(noise_add_cluster)(i, cluster=2) for i in tqdm(range(len(img_files))))
 Parallel(n_jobs=NUM_CORES)(delayed(noise_add_cluster)(i, cluster=3) for i in tqdm(range(len(img_files))))
-Parallel(n_jobs=NUM_CORES)(delayed(noise_add_cluster)(i, cluster=5) for i in tqdm(range(len(img_files))))
+#Parallel(n_jobs=NUM_CORES)(delayed(noise_add_cluster)(i, cluster=5) for i in tqdm(range(len(img_files))))
 
 Parallel(n_jobs=NUM_CORES)(delayed(noise_add_column)(i, col=1) for i in tqdm(range(len(img_files))))
 Parallel(n_jobs=NUM_CORES)(delayed(noise_add_column)(i, col=2) for i in tqdm(range(len(img_files))))
 
-Parallel(n_jobs=NUM_CORES)(delayed(noise_add_row)(i, row=1) for i in tqdm(range(len(img_files))))
-Parallel(n_jobs=NUM_CORES)(delayed(noise_add_row)(i, row=2) for i in tqdm(range(len(img_files))))
+#Parallel(n_jobs=NUM_CORES)(delayed(noise_add_row)(i, row=1) for i in tqdm(range(len(img_files))))
+#Parallel(n_jobs=NUM_CORES)(delayed(noise_add_row)(i, row=2) for i in tqdm(range(len(img_files))))
 
 
 # for i in tqdm(range(0,len(img_files))):
