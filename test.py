@@ -165,6 +165,11 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
         count = 0
         
         acc_db = []
+        dirPath = "./result_image/val/{}/".format(name)
+        dirPath_txt = "./result_txt/val/{}/".format(name)
+        #with open(os.path.join(dirPath,"result.csv"), "w") as file:
+        #    file.write("FileName:, GT:, Pred:, Acc:,\n")
+                    
         for _image_patch, _gt_patch, _idx in pbar:
             
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
@@ -186,8 +191,7 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             #_avg_ssim = avg_ssim / count
             
             if cfg.train_config.img_save_val and count < 101:  
-                dirPath = "./result_image/val/{}/".format(name)
-                dirPath_txt = "./result_txt/val/{}/".format(name)
+
                 fname = str(count).zfill(4)
                 img = _image_patch.data.cpu().numpy()
                 
@@ -249,14 +253,16 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                     _imgPred[_id0,_id1,:] = (median(np.sort(crop_neighbor[:,:,0].ravel())),median(np.sort(crop_neighbor[:,:,1].ravel())),median(np.sort(crop_neighbor[:,:,2].ravel())))
                 temp0 = np.concatenate((_gt, _img, _pred, _imgPred[1:nH+1,1:nW+1,:]),axis=1)
                 save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'), temp0.astype(np.uint8), color_domain='rgb')
-                save_img(os.path.join(dirPath, str(epoch), fname + '_gt.jpg'), _gt.astype(np.uint8), color_domain='rgb')
-                save_img(os.path.join(dirPath, str(epoch), fname + '_img.jpg'), _img.astype(np.uint8), color_domain='rgb')
-                save_img(os.path.join(dirPath, str(epoch), fname + '_pred.jpg'), _pred.astype(np.uint8), color_domain='rgb')
-                save_img(os.path.join(dirPath, str(epoch), fname + '_img_pred.jpg'), _imgPred.astype(np.uint8), color_domain='rgb')
+                #save_img(os.path.join(dirPath, str(epoch), fname + '_gt.jpg'), _gt.astype(np.uint8), color_domain='rgb')
+                #save_img(os.path.join(dirPath, str(epoch), fname + '_img.jpg'), _img.astype(np.uint8), color_domain='rgb')
+                #save_img(os.path.join(dirPath, str(epoch), fname + '_pred.jpg'), _pred.astype(np.uint8), color_domain='rgb')
+                #save_img(os.path.join(dirPath, str(epoch), fname + '_img_pred.jpg'), _imgPred.astype(np.uint8), color_domain='rgb')
                 
                 file_id = str(name) + '_munster_' + str(int(_idx)).zfill(6) + '_000019_leftImg8bit.txt'
-                with open(os.path.join(dirPath,file_id), "w") as file:
-                    file.write("GT:,{}, Pred:,{}, Acc:,{} \n".format(str(total_erro_pixel_GT), str(total_erro_pixel_Pred), str(acc_rec)))
+                
+                with open(os.path.join(dirPath,"result.csv"), "w") as file:
+                    #file.write("FileName:, GT:, Pred:, Acc:,\n")
+                    file.write("{},{},{},{} \n".format(str(file_id),str(total_erro_pixel_GT), str(total_erro_pixel_Pred), str(acc_rec)))
                 #file = open(os.path.join(dirPath,file_id), "w")
                 
                 #save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'),_pred.astype(np.uint8), color_domain='ycbcr')
