@@ -30,7 +30,7 @@ train_config:
   nclass: 2
   ignore_index: 250
   #pretrain: '/workspace/09_CHALLENGE/ECCV/ECBSR/chekpoint/model_x3_75.pt'
-  testmodelpath: '/workspace/16_Demo/pixel_error_recovery/chekpoint/best_epoch_unetencoder.pt'
+  testmodelpath: '/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/best_epoch_unetencoder.pt'
   pretrain: 
   resume: 
   mixed_pred: False

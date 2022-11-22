@@ -12,11 +12,11 @@ import math
 import random
 
 parser = argparse.ArgumentParser(description='Generate patches from Full Resolution images')
-parser.add_argument('--tar_gt', default='/dataset2/CITYSCAPES_DATASET/DEFECTION_NOISE_PAPER/gt_final',type=str, help='Directory of Converted GrayScale GT images')
-#parser.add_argument('--src_dir', default='/dataset2/CITYSCAPES_DATASET/leftImg8bit/train_all/', type=str, help='Directory of GT images')
-#parser.add_argument('--tar_dir', default='/dataset2/CITYSCAPES_DATASET/DEFECTION_NOISE_PAPER/noise_paper_final_ch1',type=str, help='Directory of Noise generated images')
-parser.add_argument('--src_dir', default='/dataset2/CITYSCAPES_DATASET/leftImg8bit/val_all/', type=str, help='Directory of GT images')
-parser.add_argument('--tar_dir', default='/dataset2/CITYSCAPES_DATASET/DEFECTION_NOISE_PAPER/noise_paper_val_final_ch1',type=str, help='Directory of Noise generated images')
+parser.add_argument('--tar_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_final',type=str, help='Directory of Converted GrayScale GT images')
+#parser.add_argument('--src_dir', default='/dataset2/Cityscapes/leftImg8bit/train_all/', type=str, help='Directory of GT images')
+#parser.add_argument('--tar_dir', default='/dataset2/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_final_ch1',type=str, help='Directory of Noise generated images')
+parser.add_argument('--src_dir', default='/dataset/Cityscapes/leftImg8bit/val_100/', type=str, help='Directory of GT images')
+parser.add_argument('--tar_dir', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_val_final_CH1',type=str, help='Directory of Noise generated images')
 parser.add_argument('--num_cores', default=20, type=int, help='Number of CPU Cores')
 
 args = parser.parse_args()
@@ -184,7 +184,8 @@ def noise_add_percent(iter, per, gray=False):
     pixel_error_idx = np.zeros((nH,nW), dtype=np.uint8)
     pixel_error_idx_test = np.zeros((nH,nW), dtype=np.uint8)
     erroPixelNumber = int((nH * nW * per)/100)
-
+    print(erroPixelNumber)
+    
     for i in range(erroPixelNumber):
         # Pick a random x,y coordinate
         yCoord=random.randint(0, nW - 1)
@@ -243,7 +244,7 @@ def noise_add_cluster(iter, cluster):
         nH, nW, _ = imgSrc.shape
         
     erroPixelNumber = 1000 # Type 3: 100 sets of cluster [2x2], [3x3]
-
+    
     
     pixel_error_idx = np.zeros((nH,nW), dtype=np.uint8)
     pixel_error_idx_test = np.zeros((nH,nW), dtype=np.uint8)
@@ -397,8 +398,8 @@ def noise_add_row(iter, row):
 
     
 #Save Gt:
-# for i in tqdm(range(0,len(img_files))):
-#     save_gt(i)
+for i in tqdm(range(0,len(img_files))):
+    save_gt(i)
 
 #for i in tqdm(range(0,len(img_files))):
 #    noise_add_percent(i, per=5.0)
