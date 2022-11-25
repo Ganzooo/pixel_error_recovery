@@ -2,6 +2,7 @@
 An older version implemented based on tradition method placed in legacy folder.
 
 The following is based Deep learning method with Unet+Resnet version implemented by us.
+![alt text](https://github.com/Ganzooo/pixel_error_recovery/blob/main/data/unet_resnet_architecture.png)
 
 ### Dependencies & Installation
 
