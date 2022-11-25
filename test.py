@@ -166,34 +166,88 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
         
         acc_db = []
         dirPath = "./result_image/val/{}/".format(name)
-        dirPath_txt = "./result_txt/val/{}/".format(name)
-        #with open(os.path.join(dirPath,"result.csv"), "w") as file:
-        #    file.write("FileName:, GT:, Pred:, Acc:,\n")
-                    
+
+        if cfg.train_config.warm_up:  
+            for i in range(20): 
+                tmp = torch.rand([1,3,512,1024]).cuda()
+                _ = model(tmp)
+                 
         for _image_patch, _gt_patch, _idx in pbar:
             
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
-            _pred = model(_image_patch)
-            val_loss = criterion(_pred, _gt_patch)
             
-            pred = _pred.data.max(1)[1].cpu().numpy()
-            gt = _gt_patch.data.cpu().numpy()
-
-            # calculate psnr
-            running_metrics_val.update(gt, pred) 
-            val_loss_meter.update(val_loss.item())      
-            #ssim = utils_sr.calc_ssim(pred, gt)         
-            #avg_psnr += psnr
-            #avg_ssim += ssim
+            _start_pixel_err = time.time()
+            
+            _pred = model(_image_patch)
+            
+            _end_pixel_err = time.time()
+            
             count += _image_patch.size(0)
             
-            #_avg_psnr = avg_psnr / count
-            #_avg_ssim = avg_ssim / count
-            
-            if cfg.train_config.img_save_val and count < 101:  
+            _imgPred = []
+            if cfg.train_config.pixel_recovery:
+                #pred = np.squeeze(_pred.data.max(1)[1].cpu().numpy(), axis=0)
+                #gt = np.squeeze(_gt_patch.data.cpu().numpy(), axis=0)
 
-                fname = str(count).zfill(4)
+                ### Pred data
+                for b in range(_pred.shape[0]):
+                    #pred = _pred.data.max(1)[1].squeeze(axis=0)
+                    pred = _pred.data.max(1)[1][b]
+                    #pred = _pred[b]
+                    unique, counts = pred.unique(return_counts=True)
+                    if len(counts) >1:
+                        total_erro_pixel_Pred = counts[1]
+                    else: 
+                        total_erro_pixel_Pred = 1
+                        
+                    index = torch.where(pred==1)
+                    
+                    #GT date
+                    gt = _gt_patch[b]
+                    unique, counts = gt.unique(return_counts=True)
+                    if len(counts) >1:
+                        total_erro_pixel_GT = counts[1]
+                    else: 
+                        total_erro_pixel_Pred = 1
+                    
+                    acc_rec = np.round(float(total_erro_pixel_Pred/total_erro_pixel_GT),2)
+                    acc_db.append(acc_rec)
+                    
+                    ### --- 
+                    ### --- 
+                    # Image Reconstruct with predicted ERROR
+                    img = _image_patch[b].data.cpu().numpy().transpose(1,2,0)
+                    _start_pixel_rec = time.time()
+                    nH, nW = img.shape[0], img.shape[1]
+                    _imgPred = np.full((nH+4, nW+4, 3), (128,128,128))
+                    _imgPred[1:nH+1,1:nW+1,:] = img*255
+                    
+                    #index = np.where(_pred_one==1)
+                    #_index = np.add(index,1)
+                    
+                    #for _id0, _id1 in zip(index[0,:], index[1,:]):
+                    for _id0, _id1 in zip(index[0].data.cpu().numpy(), index[1].data.cpu().numpy()):
+                        _id0 += 1
+                        _id1 += 1
+                        crop_neighbor = np.array(_imgPred[_id0-1:_id0+1,_id1-1:_id1+1,:])
+                        _imgPred[_id0,_id1,:] = (median(np.sort(crop_neighbor[:,:,0].ravel())),median(np.sort(crop_neighbor[:,:,1].ravel())),median(np.sort(crop_neighbor[:,:,2].ravel())))
+                
+                _end_pixel_rec = time.time()
+                
+                if cfg.train_config.save_img_rec:
+                    fname = str(name) + '_munster_' + str(int(_idx)).zfill(6) + '_000019_leftImg8bit_recover.jpg'
+                    save_img(os.path.join(dirPath, str(epoch), fname), _imgPred[1:nH+1,1:nW+1,:].astype(np.uint8), color_domain='rgb')
+                
+                    with open(os.path.join(dirPath,"result.csv"), "a") as file:
+                        file.write("{},{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname),int(total_erro_pixel_GT.data.cpu().numpy()), int(total_erro_pixel_Pred.data.cpu().numpy()), str(acc_rec), (_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
+                    
+            if cfg.train_config.img_save_val:  
+                pred = _pred.data.max(1)[1].cpu().numpy()
+                gt = _gt_patch.data.cpu().numpy()
                 img = _image_patch.data.cpu().numpy()
+                
+                fname = str(count).zfill(4)
+                
                 
                 _pred = pred[0]
                 _pred = np.expand_dims(_pred,axis=0)
@@ -217,40 +271,11 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 _pred[_pred == 1] = 255
                 
                 _gt[_gt == 0] = 0
-                _gt[_gt == 1] = 128
+                _gt[_gt == 1] = 255
                 
-                #GT pixel
-                unique, counts = np.unique(_gt, return_counts=True)
-                total_erro_pixel_GT = counts[1]
-                
-                #GT pixel
-                unique, counts = np.unique(_pred, return_counts=True)
-                if len(counts) >1:
-                    total_erro_pixel_Pred = counts[1]
-                else: 
-                    total_erro_pixel_Pred = 1
-                
-                
-                acc_rec = np.round(float(total_erro_pixel_Pred/total_erro_pixel_GT),2)
-                acc_db.append(acc_rec)
-                
-                #print("GT Pixel:", total_erro_pixel_GT)
-                #print("Pred Pixel:", total_erro_pixel_Pred)
-                #print("Acc:", acc_rec)
-                
-                #Reconstruct
-                nH = _img.shape[0]
-                nW = _img.shape[1]
-                #print(nH, nW)
-                _imgPred = np.full((nH+4, nW+4, 3), (128,128,128))
-                _imgPred[1:nH+1,1:nW+1,:] = _img
-                #_imgPred = np.full((1028, 2052, 3), (128,128,128))
-                #_imgPred[1:1025,1:2049,:] = _img
-                index = np.where(_pred_one==1)
-                _index = np.add(index,1)
-                for _id0, _id1 in zip(_index[0,:], _index[1,:]):
-                    crop_neighbor = np.array(_imgPred[_id0-1:_id0+1,_id1-1:_id1+1,:])
-                    _imgPred[_id0,_id1,:] = (median(np.sort(crop_neighbor[:,:,0].ravel())),median(np.sort(crop_neighbor[:,:,1].ravel())),median(np.sort(crop_neighbor[:,:,2].ravel())))
+                ### ---
+                ### ---
+                ### Save images
                 temp0 = np.concatenate((_gt, _img, _pred, _imgPred[1:nH+1,1:nW+1,:]),axis=1)
                 save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'), temp0.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_gt.jpg'), _gt.astype(np.uint8), color_domain='rgb')
@@ -258,14 +283,8 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_pred.jpg'), _pred.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_img_pred.jpg'), _imgPred.astype(np.uint8), color_domain='rgb')
                 
-                file_id = str(name) + '_munster_' + str(int(_idx)).zfill(6) + '_000019_leftImg8bit.txt'
                 
-                with open(os.path.join(dirPath,"result.csv"), "w") as file:
-                    #file.write("FileName:, GT:, Pred:, Acc:,\n")
-                    file.write("{},{},{},{} \n".format(str(file_id),str(total_erro_pixel_GT), str(total_erro_pixel_Pred), str(acc_rec)))
-                #file = open(os.path.join(dirPath,file_id), "w")
                 
-                #save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'),_pred.astype(np.uint8), color_domain='ycbcr')
                 
             pbar.set_postfix(epoch=f'{epoch}',
                         acc=f'{acc_rec:0.4f}')
@@ -296,8 +315,6 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             })
 
 def run_validate(cfg, model, optimizer, scheduler, criterion, device, num_epochs, train_loader, valid_loader, model_path):
-    # To automatically log gradients
-    #wandb.watch(model, log_freq=100)
     
     start = time.time()
     best_miou      = -np.inf
@@ -305,25 +322,6 @@ def run_validate(cfg, model, optimizer, scheduler, criterion, device, num_epochs
 
     print("load test model: {}!".format(model_path))
     model.load_state_dict(torch.load(model_path))
-    
-    # print("Check whether the pretrained model is restored...")
-    # if cfg.train_config.resume:
-    #     # Load checkpoint model
-    #     checkpoint = torch.load(cfg.train_config.resume, map_location=lambda storage, loc: storage)
-    #     # Restore the parameters in the training node to this point
-    #     cfg.train_config.start_epoch = checkpoint["epoch"]
-    #     best_psnr = checkpoint["best_psnr"]
-    #     # Load checkpoint state dict. Extract the fitted model weights
-    #     model_state_dict = model.state_dict()
-    #     new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if k in model_state_dict}
-    #     # Overwrite the pretrained model weights to the current model
-    #     model_state_dict.update(new_state_dict)
-    #     model.load_state_dict(model_state_dict)
-    #     # Load the optimizer model
-    #     optimizer.load_state_dict(checkpoint["optimizer"])
-    #     # Load the scheduler model
-    #     # scheduler.load_state_dict(checkpoint["scheduler"])
-    #     print("Loaded pretrained model weights.")
     
     log_name = os.path.join("log.txt")
     sys.stdout = utils_sr.ExperimentLogger(log_name, sys.stdout)
@@ -333,100 +331,12 @@ def run_validate(cfg, model, optimizer, scheduler, criterion, device, num_epochs
                                     device=device,
                                     epoch=0, stat_dict=stat_dict, run_log_wandb=None)
     
-    #epoch_PSNR = val_div2k_psnr
-    # if stat_dict['pr5']['best_miou']['value'] > best_miou:
-    #     print("{}Valid PSNR Improved at {} -> (Before:{} ---> Best:{})".format(c_,'pr5',best_miou,stat_dict['pr5']['best_miou']['value']))
-    #     #print("\t{}Valid SSIM Improved at {} -> ({}), Epoch: {}/{}".format(c_,'Div2k',stat_dict['Div2k']['best_ssim']['value'], epoch, num_epochs))
-    #     sys.stdout.flush()
-        
-    #     best_miou = stat_dict['pr5']['best_miou']['value']
-    #     best_epoch        = 0
-    #     if cfg.train_config.wandb:
-    #         wandb.summary["Best mIoU"]    = stat_dict['pr5']['best_miou']['value']
-    #         wandb.summary["Best Epoch"]   = best_epoch
-
-    #     # save stat dict
-    #     ## save training paramters
-    #     stat_dict_name = os.path.join('./', 'stat_dict.yml')
-    #     with open(stat_dict_name, 'w') as stat_dict_file:
-    #         yaml.dump(stat_dict, stat_dict_file, default_flow_style=False)
-    
-    #     dirPath = "./run/{}".format(cfg.train_config.comment)
-    #     PATH = f"best_epoch.pt"
-    #     torch.save(model.state_dict(), os.path.join(dirPath,PATH))
-    #     # Save a model file from the current directory
-    #     if cfg.train_config.wandb:
-    #         wandb.save(PATH)
-    #     print(f"Model Saved{sr_}")
-
-    #last_model_wts = copy.deepcopy(model.state_dict())
-    # PATH = f"last_epoch.pt"
-    # torch.save(model.state_dict(), PATH)
-    # print(); print()
-    
-    # torch.cuda.empty_cache()
-    # gc.collect()
-
     end = time.time()
     time_elapsed = end - start
     print('Validation complete in {:.0f}h {:.0f}m {:.0f}s'.format(
         time_elapsed // 3600, (time_elapsed % 3600) // 60, (time_elapsed % 3600) % 60))
     #print("Best mIoU Score: {:.4f}".format(best_miou))
     return model
-
-#@hydra.main(config_path="conf", config_name="config")
-def train(cfg : DictConfig) -> None:
-    set_seed()
-    
-    device = None
-    if cfg.train_config.gpu_id >= 0 and torch.cuda.is_available():
-        print("use cuda & cudnn for acceleration!")
-        print("the gpu id is: {}".format(cfg.train_config.gpu_id))
-        device = torch.device('cuda:{}'.format(cfg.train_config.gpu_id))
-        torch.backends.cudnn.benchmark = True
-    else:
-        print("use cpu for training!")
-        device = torch.device('cpu')
-    #torch.set_num_threads(cfg.train_config.threads)
-    
-    ### For use original path.
-    ### For debug...
-    #currPath = os.getcwd()
-    #os.chdir(currPath)
-    #print(currPath)
-    # org_cwd = hydra.utils.get_original_cwd()
-    # print(org_cwd)
-    
-    dirPath = "./run/{}".format(cfg.train_config.comment)
-    if not os.path.isdir(dirPath): 
-        os.makedirs(dirPath)
-    
-    model = get_model(cfg, device)
-    train_loader, valid_loader  = get_dataset(cfg)
-    optimizer = get_optimizer(cfg, model)
-    
-    scheduler = get_scheduler(cfg, optimizer)
-    criterion = get_criterion(cfg)
-    print(cfg.train_config.comment)
-    
-    if cfg.train_config.wandb:
-        run_log_wandb = wandb.init(entity="gnzrg25", project='Noise pixel detection',
-                    config={k:v for k, v in dict(cfg).items() if '__' not in k},
-                    anonymous=anonymous,
-                    name=f"dim-{cfg.train_config.patch_size}x{cfg.train_config.patch_size}|model-{cfg.model.name}",
-                    group=cfg.train_config.comment,
-                    )
-    else: 
-        run_log_wandb = 0
-    
-    model = run_training(cfg, model, optimizer, scheduler, criterion=criterion,
-                                device=device,
-                                num_epochs=cfg.train_config.epochs,
-                                train_loader=train_loader,
-                                valid_loader=valid_loader,
-                                run_log_wandb=run_log_wandb)
-    if cfg.train_config.wandb:
-        run_log_wandb.finish()
         
 @hydra.main(config_path="conf", config_name="config")
 def validate(cfg : DictConfig) -> None:
@@ -460,3 +370,6 @@ def validate(cfg : DictConfig) -> None:
 if __name__ == '__main__':
     #train()
     validate()
+    
+
+print('Hello')

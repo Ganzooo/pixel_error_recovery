@@ -14,6 +14,9 @@ train_config:
   comment:    ${model.name}_ep_${train_config.epochs}_op_${optimizer.name}_lr_${optimizer.lr}_size_${train_config.patch_size}_loss_${losses.name}_des_${train_config.description}
   device:     "cuda"
   img_save_val: True
+  pixel_recovery: True
+  save_img_rec: False
+  warm_up: True
 
   ## parameters for model training
   patch_size: 256

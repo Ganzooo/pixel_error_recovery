@@ -11,8 +11,6 @@ import glob2
 import random
 import albumentations as A
 import albumentations.pytorch as Ap
-from source.dataset.div2k import DIV2K
-from source.dataset.benchmark import Benchmark
 from source.dataset.custom_dataset import CustomDataSet
 
 
