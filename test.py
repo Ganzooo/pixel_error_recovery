@@ -368,8 +368,4 @@ def validate(cfg : DictConfig) -> None:
                                 valid_loader=valid_loader, 
                                 model_path= cfg.train_config.testmodelpath)
 if __name__ == '__main__':
-    #train()
     validate()
-    
-
-print('Hello')
