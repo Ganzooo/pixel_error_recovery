@@ -12,11 +12,22 @@ git clone https://github.com/Ganzooo/pixel_error_recovery
 cd pixel_error_recovery
 pip install -r requirements.txt
 ```
-### Dataset of Pixel Recovery
+### Dataset of Pixel Recovery & Prepare Noise dataset.
 
 You can download Cityscape dataset from Web [Link](https://www.cityscapes-dataset.com/login/)
 
+For prepare noise dataset:
+ - need to set correct path.
+```
+cd ./legacy_ddp
+
+## If you set all settings correct
+python noise_add.py
+```
+
+
 Path of Dataset must be set in ./config/dataset/main.yaml
+
 
 ### Training & Testing
 You could also try less/larger batch-size, if there are limited/enough hardware resources in your GPU-server.
