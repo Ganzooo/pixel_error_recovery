@@ -47,7 +47,7 @@ python train.py optimizer=sgd train_config.batch_size=1024 train_config.epochs=1
 python test.py
 ```
 
-### Check Result
+### Result
 Validation result image, Best weight, Last weight and log files saved in this ***./output/{DATE_of_TODAY}/{Last_folder}*** folder.
 
 - (a) GT error image index,           (b) Input image with error pixel          (c) Pred error image            (d) Recovered image
