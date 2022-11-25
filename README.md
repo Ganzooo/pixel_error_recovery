@@ -49,3 +49,6 @@ python test.py
 
 ### Check Result
 Validation result image, Best weight, Last weight and log files saved in this ***./output/{DATE_of_TODAY}/{Last_folder}*** folder.
+
+- GT error image index          - Input image with error pixel          - Pred error image            - Recovered image
+![alt text](https://github.com/Ganzooo/pixel_error_recovery/blob/main/data/result_img_gt_pred.jpg)
