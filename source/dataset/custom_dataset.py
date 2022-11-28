@@ -112,7 +112,7 @@ class CustomDataSet(data.Dataset):
             #_gt_patch[_gt_patch == 255] = 1
             gt_patch = torch.from_numpy(_gt_patch.copy()).long()
     
-            return _image_patch, gt_patch
+            return _image_patch, gt_patch, idx
         else:
             _image = _image.transpose(2,0,1)
             _image = _image / 255.

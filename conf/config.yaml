@@ -1,5 +1,5 @@
 defaults:
-- dataset: demo #dataset_gray #main 
+- dataset: train_grb #demo #dataset_gray #main 
 - model: UNetWithResnet50Encoder #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
 - optimizer: adam  #adam
 #- hydra/sweeper: optuna #Optuna hyperparamater optimization program
@@ -20,7 +20,8 @@ train_config:
 
   ## parameters for model training
   patch_size: 256
-  batch_size: 16
+  batch_size: 32
+  batch_size_val: 8
   data_repeat: 1
   data_augment: 1
   start_epoch: 0
@@ -38,18 +39,8 @@ train_config:
   resume: 
   mixed_pred: False
   ## hardware specification
-  gpu_id: 0
+  gpu_id: 1
   threads: 1
   wandb: 0
 losses:
   name:         'bootstrapped_cross_entropy2d'
-tflite_converter:
-  pretrain: '/workspace/09_CHALLENGE/ECCV/baseline_trainer_sr/chekpoint/best_epoch_fsrcnn.pt'
-  tf_output_folder: '/workspace/09_CHALLENGE/ECCV/baseline_trainer_sr/tflite/tf/'
-  tl_output_folder: '/workspace/09_CHALLENGE/ECCV/baseline_trainer_sr/tflite/tl/'
-  nB: 1
-  nC: 3
-  nH: 360
-  nW: 640
-  tflite_ops: True
-  div2k_val: '/dataset/SR'
