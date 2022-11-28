@@ -12,11 +12,25 @@ import math
 import random
 
 parser = argparse.ArgumentParser(description='Generate patches from Full Resolution images')
-parser.add_argument('--tar_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_final',type=str, help='Directory of Converted GrayScale GT images')
+# 100 val images for TEST
+# parser.add_argument('--src_dir', default='/dataset/Cityscapes/leftImg8bit/val_100/', type=str, help='Directory of GT images')
+# parser.add_argument('--tar_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_val_100',type=str, help='Directory of Converted GrayScale GT images')
+# parser.add_argument('--tar_dir', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_bw_paper_val_100',type=str, help='Directory of Noise generated images')
+
+# All val images
+# parser.add_argument('--src_dir', default='/dataset/Cityscapes/leftImg8bit/val_all/', type=str, help='Directory of GT images')
+# parser.add_argument('--tar_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_val',type=str, help='Directory of Converted GrayScale GT images')
+# parser.add_argument('--tar_dir', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val',type=str, help='Directory of Noise generated images')
+
+parser.add_argument('--src_dir', default='/dataset/Cityscapes/leftImg8bit/train_all/', type=str, help='Directory of GT images')
+parser.add_argument('--tar_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_train',type=str, help='Directory of Converted GrayScale GT images')
+parser.add_argument('--tar_dir', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_train',type=str, help='Directory of Noise generated images')
+
+
 #parser.add_argument('--src_dir', default='/dataset2/Cityscapes/leftImg8bit/train_all/', type=str, help='Directory of GT images')
 #parser.add_argument('--tar_dir', default='/dataset2/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_final_ch1',type=str, help='Directory of Noise generated images')
-parser.add_argument('--src_dir', default='/dataset/Cityscapes/leftImg8bit/val_100/', type=str, help='Directory of GT images')
-parser.add_argument('--tar_dir', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_val_final_CH1',type=str, help='Directory of Noise generated images')
+
+
 parser.add_argument('--num_cores', default=20, type=int, help='Number of CPU Cores')
 
 args = parser.parse_args()
@@ -25,13 +39,13 @@ src = args.src_dir
 tar = args.tar_dir
 tar_gt = args.tar_gt
 
-COLOR_NOISE = False
+COLOR_NOISE = True
 NUM_CORES = args.num_cores
 COLOR_RANDOM = (0,0,0)
 COLOR_DEAD_PIXEL_BLACK = 0
 COLOR_DEAD_PIXEL_WHITE = 255
 RESIZE_IMG = True
-GRAY_IMG = True
+GRAY_IMG = False
 
 __DEBUG__ = 0
 if os.path.exists(tar):
@@ -103,6 +117,18 @@ def noise_add(iter):
     pixel_error_idx = np.zeros((nH,nW), dtype=np.uint8)
     if random_col_row_sp == 0:
         random_pixel = random.randint(0 , nW-1)
+        if COLOR_NOISE:
+           org_pixel = imgSrc[:,random_pixel,:]
+           error_pixel_value = [[0, 1, 1], [1, 0, 1], [1, 1, 0], [255, 1, 1], [1, 255, 1], [1, 1, 255]]
+           random_color = random.randint(0 , 5) #0: R_0, 1: G_0, 2: B_0 3: R_255, 4: G_255, 5:B_255
+           
+           _org_pixel = []
+           _org_pixel[0] = np.uint8(org_pixel[0] * error_pixel_value[random_color][0])
+           _org_pixel[1] = np.uint8(org_pixel[1] * error_pixel_value[random_color][1])
+           _org_pixel[2] = np.uint8(org_pixel[2] * error_pixel_value[random_color][2])
+           
+           random_max_min = random.randint(0, 1) #0: 0, 1: 255
+           
         COLOR_RANDOM = random.randint(1,254), random.randint(1,254),random.randint(1,254)
         if COLOR_NOISE:
             imgSrc[:,random_pixel,:] = COLOR_RANDOM
@@ -184,7 +210,7 @@ def noise_add_percent(iter, per, gray=False):
     pixel_error_idx = np.zeros((nH,nW), dtype=np.uint8)
     pixel_error_idx_test = np.zeros((nH,nW), dtype=np.uint8)
     erroPixelNumber = int((nH * nW * per)/100)
-    print(erroPixelNumber)
+    #print(erroPixelNumber)
     
     for i in range(erroPixelNumber):
         # Pick a random x,y coordinate
@@ -199,12 +225,17 @@ def noise_add_percent(iter, per, gray=False):
             else: 
                 imgSrc[xCoord,yCoord] = COLOR_DEAD_PIXEL_WHITE
         else: 
-            if dead_pixel_type == 0:
-                imgSrc[xCoord,yCoord] = (0,0,0)
-                #imgSrc[xCoord,yCoord] = COLOR_DEAD_PIXEL_BLACK
-            else: 
-                #imgSrc[xCoord,yCoord] = COLOR_DEAD_PIXEL_WHITE
-                imgSrc[xCoord,yCoord] = (255,255,255)
+            if COLOR_NOISE:
+                org_pixel = imgSrc[xCoord,yCoord,:]
+                error_pixel_value = [[0, 1, 1], [1, 0, 1], [1, 1, 0], [255, 1, 1], [1, 255, 1], [1, 1, 255]]
+                random_color = random.randint(0 , 5) #0: R_0, 1: G_0, 2: B_0 3: R_255, 4: G_255, 5:B_255
+
+                org_pixel[0] = np.clip(org_pixel[0] * error_pixel_value[random_color][0], 0, 255)
+                org_pixel[1] = np.clip(org_pixel[1] * error_pixel_value[random_color][1], 0, 255)
+                org_pixel[2] = np.clip(org_pixel[2] * error_pixel_value[random_color][2], 0, 255)
+                
+                imgSrc[xCoord,yCoord] = org_pixel
+
 
         ###Save index
         pixel_error_idx[xCoord,yCoord] = 1
@@ -264,13 +295,28 @@ def noise_add_cluster(iter, cluster):
                 dead_pixel.fill(255)
                 imgSrc[xCoord:xCoord+cluster,yCoord:yCoord+cluster] = dead_pixel    
         else: 
-            if dead_pixel_type == 0:
-                dead_pixel = np.zeros([cluster,cluster, 3])
-                imgSrc[xCoord:xCoord+cluster,yCoord:yCoord+cluster, :] = dead_pixel
-            else: 
-                dead_pixel = np.zeros([cluster,cluster,3])
-                dead_pixel.fill(255)
-                imgSrc[xCoord:xCoord+cluster,yCoord:yCoord+cluster,:] = dead_pixel
+            if COLOR_NOISE:
+                org_pixel = imgSrc[xCoord:xCoord+cluster,yCoord:yCoord+cluster, :]
+                error_pixel_value = [[0, 1, 1], [1, 0, 1], [1, 1, 0], [255, 1, 1], [1, 255, 1], [1, 1, 255]]
+                
+                #print(org_pixel)
+                for i in range(cluster):
+                    for j in range(cluster):
+                        random_color = random.randint(0 , 5) #0: R_0, 1: G_0, 2: B_0 3: R_255, 4: G_255, 5:B_255
+                        org_pixel[i,j,0] = np.clip(org_pixel[i,j,0] * error_pixel_value[random_color][0], 0, 255)
+                        org_pixel[i,j,1] = np.clip(org_pixel[i,j,1] * error_pixel_value[random_color][1], 0, 255)
+                        org_pixel[i,j,2] = np.clip(org_pixel[i,j,2] * error_pixel_value[random_color][2], 0, 255)
+                #print(org_pixel)
+                #imgSrc[xCoord,yCoord] = org_pixel
+                imgSrc[xCoord:xCoord+cluster,yCoord:yCoord+cluster] = org_pixel
+            
+            # if dead_pixel_type == 0:
+            #     dead_pixel = np.zeros([cluster,cluster, 3])
+            #     imgSrc[xCoord:xCoord+cluster,yCoord:yCoord+cluster, :] = dead_pixel
+            # else: 
+            #     dead_pixel = np.zeros([cluster,cluster,3])
+            #     dead_pixel.fill(255)
+            #     imgSrc[xCoord:xCoord+cluster,yCoord:yCoord+cluster,:] = dead_pixel
 
         ###Save index
         pixel_error_idx[xCoord:xCoord+cluster,yCoord:yCoord+cluster] = 1
@@ -319,13 +365,28 @@ def noise_add_column(iter, col):
             dead_pixel.fill(255)
             imgSrc[xCoord:xCoord+col,:] = dead_pixel    
     else: 
-        if dead_pixel_type == 0:
-            dead_pixel = np.zeros([col,nW, 3])
-            imgSrc[xCoord:xCoord+col,:, :] = dead_pixel
-        else: 
-            dead_pixel = np.zeros([col,nW,3])
-            dead_pixel.fill(255)
-            imgSrc[xCoord:xCoord+col,:,:] = dead_pixel
+        if COLOR_NOISE:
+            org_pixel = imgSrc[xCoord:xCoord+col,:, :]
+            error_pixel_value = [[0, 1, 1], [1, 0, 1], [1, 1, 0], [255, 1, 1], [1, 255, 1], [1, 1, 255]]
+            
+            #print(org_pixel)
+            for i in range(col):
+                for j in range(nW):
+                    random_color = random.randint(0 , 5) #0: R_0, 1: G_0, 2: B_0 3: R_255, 4: G_255, 5:B_255
+                    org_pixel[i,j,0] = np.clip(org_pixel[i,j,0] * error_pixel_value[random_color][0], 0, 255)
+                    org_pixel[i,j,1] = np.clip(org_pixel[i,j,1] * error_pixel_value[random_color][1], 0, 255)
+                    org_pixel[i,j,2] = np.clip(org_pixel[i,j,2] * error_pixel_value[random_color][2], 0, 255)
+            #print(org_pixel)
+            #imgSrc[xCoord,yCoord] = org_pixel
+            imgSrc[xCoord:xCoord+col] = org_pixel
+                
+        # if dead_pixel_type == 0:
+        #     dead_pixel = np.zeros([col,nW, 3])
+        #     imgSrc[xCoord:xCoord+col,:, :] = dead_pixel
+        # else: 
+        #     dead_pixel = np.zeros([col,nW,3])
+        #     dead_pixel.fill(255)
+        #     imgSrc[xCoord:xCoord+col,:,:] = dead_pixel
                 
     pixel_error_idx[xCoord:xCoord+col,:] = 1
     pixel_error_idx_test[xCoord:xCoord+col,:] = 200
