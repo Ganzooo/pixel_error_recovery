@@ -133,3 +133,4 @@ outputs/*
 .vscode/launch.json
 checkpoint/best_epoch_unetencoder.pt
 outputs/*
+.vscode/extensions.json
