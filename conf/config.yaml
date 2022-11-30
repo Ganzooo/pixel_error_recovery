@@ -15,7 +15,7 @@ train_config:
   device:     "cuda"
   img_save_val: True
   pixel_recovery: True
-  save_img_rec: False
+  save_img_rec: True
   warm_up: True
 
   ## parameters for model training
@@ -42,5 +42,6 @@ train_config:
   gpu_id: 1
   threads: 1
   wandb: 1
+  fsize: 2
 losses:
   name:         'bootstrapped_cross_entropy2d'

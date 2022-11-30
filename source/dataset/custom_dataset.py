@@ -17,9 +17,9 @@ def _ndarray2tensor(ndarray_hwc):
     return tensor
 
 class CustomDataSet(data.Dataset):
-    def __init__(self, imamge_folder, gt_folder, train=True, augment=True, scale=2, colors=1, patch_size=96, repeat=168, store_in_ram=True):
+    def __init__(self, image_folder, gt_folder, train=True, augment=True, scale=2, colors=1, patch_size=96, repeat=168, store_in_ram=True):
         super(CustomDataSet, self).__init__()
-        self.imamge_folder = imamge_folder
+        self.image_folder = image_folder
         self.gt_folder = gt_folder
         self.augment   = augment
         self.train     = train
@@ -34,7 +34,7 @@ class CustomDataSet(data.Dataset):
         self.imageName = []
         self.gtName = []
 
-        _imgPath = sorted(glob.glob(self.imamge_folder + '*.png'))
+        _imgPath = sorted(glob.glob(self.image_folder + '*.png'))
         _imgPathGT = sorted(glob.glob(self.gt_folder + '*.png'))
         assert len(_imgPath) == len(_imgPathGT)
         for idx, (_imgNameHR, _imgNameLR) in enumerate(zip(_imgPath, _imgPathGT)):
@@ -46,6 +46,8 @@ class CustomDataSet(data.Dataset):
         if self.store_in_ram:
             self.images = []
             self.gts = []
+            self.fname = []
+            
 
             for i in range(len(_imgPath)):
                 _image, _gt = imageio.imread(self.imageName[i], pilmode="RGB"), imageio.imread(self.gtName[i], pilmode="RGB")
@@ -54,6 +56,7 @@ class CustomDataSet(data.Dataset):
                     _image, _gt = _image.convert('L'), _gt.convert('L')
                 self.images.append(_image)
                 self.gts.append(_gt) 
+                self.fname.append(self.imageName[i])
                 
     def __len__(self):
         if self.train:
@@ -66,12 +69,12 @@ class CustomDataSet(data.Dataset):
         idx = idx % self.nums_trainset
         # get whole image
         if self.store_in_ram:
-            _image, _gt = self.images[idx], self.gts[idx]
+            _image, _gt, _fname = self.images[idx], self.gts[idx], self.fname[idx]
         else:
             if self.colors != 1:
-                _image, _gt = imageio.imread(self.imageName[idx], pilmode="RGB"), imageio.imread(self.gtName[idx], pilmode="L")
+                _image, _gt, _fname = imageio.imread(self.imageName[idx], pilmode="RGB"), imageio.imread(self.gtName[idx], pilmode="L"), self.imageName[idx]
             if self.colors == 1:
-                _image, _gt = imageio.imread(self.imageName[idx], pilmode="RGB"), imageio.imread(self.gtName[idx], pilmode="L")
+                _image, _gt, _fname = imageio.imread(self.imageName[idx], pilmode="RGB"), imageio.imread(self.gtName[idx], pilmode="L"), self.imageName[idx]
                 #_image, _gt = _image.rgb2ycbcr(_image)[:, :, 0:1], _gt.rgb2ycbcr(_gt)[:, :, 0:1]
                 _image = _image[:, :, 0:1]
         if self.train:
@@ -112,7 +115,7 @@ class CustomDataSet(data.Dataset):
             #_gt_patch[_gt_patch == 255] = 1
             gt_patch = torch.from_numpy(_gt_patch.copy()).long()
     
-            return _image_patch, gt_patch, idx
+            return _image_patch, gt_patch, idx, _fname
         else:
             _image = _image.transpose(2,0,1)
             _image = _image / 255.
@@ -124,7 +127,7 @@ class CustomDataSet(data.Dataset):
             # _gt[_gt == 0] = 250 
             # _gt[_gt == 255] = 1
             _gt = torch.from_numpy(_gt.copy()).long()
-            return _image, _gt, idx
+            return _image, _gt, idx, _fname
 
 if __name__ == '__main__':
     noise = '/dataset2/CITYSCAPES_DATASET/DEFECTION_NOISE_PAPER/noise_paper_d2/pr_0_5/'

@@ -60,7 +60,7 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
         pbar = tqdm(enumerate(dataloader), total=len(dataloader), desc='Train {}:'.format(name))
         for step, (data) in pbar:
 
-            _image_patch, _gt_patch, _idx = data
+            _image_patch, _gt_patch, _idx, _fname = data
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
                 
             batch_size = _image_patch.size(0)
@@ -168,7 +168,7 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
         acc_db = []
         dirPath = "./result_image/val/{}/".format(name)
                  
-        for _image_patch, _gt_patch, _idx in pbar:
+        for _image_patch, _gt_patch, _idx, _fname in pbar:
             
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
             
@@ -181,7 +181,9 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             count += _image_patch.size(0)
             
             _imgPred = []
+            _imgRec = []
             if cfg.train_config.pixel_recovery:
+                filter_size = cfg.train_config.fsize
                 #pred = np.squeeze(_pred.data.max(1)[1].cpu().numpy(), axis=0)
                 #gt = np.squeeze(_gt_patch.data.cpu().numpy(), axis=0)
 
@@ -189,22 +191,9 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 for b in range(_pred.shape[0]):
                     #pred = _pred.data.max(1)[1].squeeze(axis=0)
                     pred = _pred.data.max(1)[1][b]
-                    #pred = _pred[b]
-                    unique, counts = pred.unique(return_counts=True)
-                    if len(counts) >1:
-                        total_erro_pixel_Pred = counts[1]
-                    else: 
-                        total_erro_pixel_Pred = 1
-                        
                     index = torch.where(pred==1)
                     
-                    #GT date
                     gt = _gt_patch[b]
-                    unique, counts = gt.unique(return_counts=True)
-                    if len(counts) >1:
-                        total_erro_pixel_GT = counts[1]
-                    else: 
-                        total_erro_pixel_Pred = 1
                     
                     acc_rec = accuracy_score(gt.cpu(), pred.cpu())
                     #acc_rec = np.round(float(total_erro_pixel_Pred/total_erro_pixel_GT),2)
@@ -216,27 +205,28 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                     img = _image_patch[b].data.cpu().numpy().transpose(1,2,0)
                     _start_pixel_rec = time.time()
                     nH, nW = img.shape[0], img.shape[1]
-                    _imgPred = np.full((nH+4, nW+4, 3), (128,128,128))
-                    _imgPred[1:nH+1,1:nW+1,:] = img*255
+                    _imgPred = np.full((nH+(filter_size*2), nW+(filter_size*2), 3), (128,128,128))
+                    _imgPred[filter_size:nH+filter_size,filter_size:nW+filter_size,:] = img*255
                     
                     #index = np.where(_pred_one==1)
                     #_index = np.add(index,1)
                     
                     #for _id0, _id1 in zip(index[0,:], index[1,:]):
                     for _id0, _id1 in zip(index[0].data.cpu().numpy(), index[1].data.cpu().numpy()):
-                        _id0 += 1
-                        _id1 += 1
-                        crop_neighbor = np.array(_imgPred[_id0-1:_id0+1,_id1-1:_id1+1,:])
+                        _id0 += filter_size
+                        _id1 += filter_size
+                        crop_neighbor = np.array(_imgPred[_id0-filter_size:_id0+filter_size,_id1-filter_size:_id1+filter_size,:])
                         _imgPred[_id0,_id1,:] = (median(np.sort(crop_neighbor[:,:,0].ravel())),median(np.sort(crop_neighbor[:,:,1].ravel())),median(np.sort(crop_neighbor[:,:,2].ravel())))
-                
+                    _imgRec = _imgPred[filter_size:nH+filter_size,filter_size:nW+filter_size,:].astype(np.uint8)
                 _end_pixel_rec = time.time()
                 
                 if cfg.train_config.save_img_rec:
-                    fname = str(name) + '_munster_' + str(int(_idx)).zfill(6) + '_000019_leftImg8bit_recover.jpg'
-                    save_img(os.path.join(dirPath, str(epoch), fname), _imgPred[1:nH+1,1:nW+1,:].astype(np.uint8), color_domain='rgb')
+                    #fname = str(name) + '_munster_' + str(int(_idx[b])).zfill(6) + '_000019_leftImg8bit_recover.png'
+                    fname = os.path.basename(_fname[b])
+                    save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), _imgRec.astype(np.uint8), color_domain='rgb')
                 
-                    with open(os.path.join(dirPath,"result.csv"), "a") as file:
-                        file.write("{},{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname),int(total_erro_pixel_GT.data.cpu().numpy()), int(total_erro_pixel_Pred.data.cpu().numpy()), str(acc_rec), (_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
+                    #with open(os.path.join(dirPath,"result.csv"), "a") as file:
+                    #    file.write("{},{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname),int(total_erro_pixel_GT.data.cpu().numpy()), int(total_erro_pixel_Pred.data.cpu().numpy()), str(acc_rec), (_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
                     
             if cfg.train_config.img_save_val and count < 81:  
                 pred = _pred.data.max(1)[1].cpu().numpy()
@@ -269,18 +259,15 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 _gt[_gt == 0] = 0
                 _gt[_gt == 1] = 255
                 
-                ### ---
-                ### ---
                 ### Save images
-                temp0 = np.concatenate((_gt, _img, _pred, _imgPred[1:nH+1,1:nW+1,:]),axis=1)
+                temp0 = np.concatenate((_gt, _img, _pred, _imgRec),axis=1)
                 save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'), temp0.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_gt.jpg'), _gt.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_img.jpg'), _img.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_pred.jpg'), _pred.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_img_pred.jpg'), _imgPred.astype(np.uint8), color_domain='rgb')
                 
-            pbar.set_postfix(epoch=f'{epoch}',
-                        acc=f'{acc_rec:0.4f}')
+            pbar.set_postfix(epoch=f'{epoch}', acc=f'{acc_rec:0.4f}')
         
         score, class_iou = running_metrics_val.get_scores()
         _score=[]
@@ -454,35 +441,5 @@ def train(cfg : DictConfig) -> None:
     if cfg.train_config.wandb:
         run_log_wandb.finish()
         
-@hydra.main(config_path="conf", config_name="config")
-def validate(cfg : DictConfig) -> None:
-    device = None
-    if cfg.train_config.gpu_id >= 0 and torch.cuda.is_available():
-        print("use cuda & cudnn for acceleration!")
-        print("the gpu id is: {}".format(cfg.train_config.gpu_id))
-        device = torch.device('cuda:{}'.format(cfg.train_config.gpu_id))
-        torch.backends.cudnn.benchmark = True
-    else:
-        print("use cpu for training!")
-        device = torch.device('cpu')
-
-    dirPath = "./run/validate/{}".format(cfg.train_config.comment)
-    if not os.path.isdir(dirPath): 
-        os.makedirs(dirPath)
-    
-    model = get_model(cfg, device)
-    _, valid_loader  = get_dataset(cfg)
-    optimizer = get_optimizer(cfg, model)
-    scheduler = get_scheduler(cfg, optimizer)
-    criterion = get_criterion(cfg)
-    print(cfg.train_config.comment)
-    
-    model = run_validate(cfg, model, optimizer, scheduler, criterion=criterion,
-                                device=device,
-                                num_epochs=cfg.train_config.epochs,
-                                train_loader=None,
-                                valid_loader=valid_loader, 
-                                model_path= cfg.train_config.testmodelpath)
 if __name__ == '__main__':
     train()
-    #validate()
