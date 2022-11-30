@@ -18,8 +18,9 @@ gt_img_path_cl2: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_trai
 
 noised_img_path_cl3: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/cluster_3/'
 gt_img_path_cl3: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/cluster_3/index/'
-# noised_img_path_pr5: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_final/pr_5_0/'
-# gt_img_path_pr5: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_final/pr_5_0/index/'
+
+noised_img_path_pr5: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/pr_5_0/'
+gt_img_path_pr5: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/pr_5_0/index/'
 # noised_img_path_cl5: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_final/cluster_5/'
 # gt_img_path_cl5: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_final/cluster_5/index/'
 # noised_img_path_row1: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_final/row_1/'
@@ -46,8 +47,9 @@ gt_img_path_val_cl2: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_
 
 noised_img_path_val_cl3: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/cluster_3/'
 gt_img_path_val_cl3: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/cluster_3/index/'
-# noised_img_path_val_pr5: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_val_final/pr_5_0/'
-# gt_img_path_val_pr5: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_val_final/pr_5_0/index/'
+
+noised_img_path_val_pr5: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/pr_5_0/'
+gt_img_path_val_pr5: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/pr_5_0/index/'
 # noised_img_path_val_cl5: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_val_final/cluster_5/'
 # gt_img_path_val_cl5: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_val_final/cluster_5/index/'
 # noised_img_path_val_row1: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_paper_val_final/row_1/'

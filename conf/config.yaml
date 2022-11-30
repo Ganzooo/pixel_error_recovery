@@ -1,5 +1,5 @@
 defaults:
-- dataset: train_grb #demo #dataset_gray #main 
+- dataset: train_grb #demo #dataset_gray #main #server_train_rgb
 - model: UNetWithResnet50Encoder #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
 - optimizer: adam  #adam
 #- hydra/sweeper: optuna #Optuna hyperparamater optimization program
@@ -10,7 +10,7 @@ train_config:
   mode: 'hybrid'
   seed:       101
   debug:      False # set debug=False for Full Training
-  description: "model_with_skip_conn"
+  description: "local_test"
   comment:    ${model.name}_ep_${train_config.epochs}_op_${optimizer.name}_lr_${optimizer.lr}_size_${train_config.patch_size}_loss_${losses.name}_des_${train_config.description}
   device:     "cuda"
   img_save_val: True
@@ -19,15 +19,15 @@ train_config:
   warm_up: True
 
   ## parameters for model training
-  patch_size: 256
+  patch_size: 128
   batch_size: 32
   batch_size_val: 8
   data_repeat: 1
   data_augment: 1
   start_epoch: 0
-  epochs: 100
+  epochs: 200
   log_every: 100
-  test_every: 1
+  test_every: 5
   log_path: "./experiments"
   lr: 0.0005
   store_in_ram: 0
@@ -35,12 +35,12 @@ train_config:
   ignore_index: 250
   #pretrain: '/workspace/09_CHALLENGE/ECCV/ECBSR/chekpoint/model_x3_75.pt'
   testmodelpath: '/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/best_epoch_unetencoder.pt'
-  pretrain: 
+  pretrain: '/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/resume/last_epoch.pt'
   resume: 
   mixed_pred: False
   ## hardware specification
   gpu_id: 1
   threads: 1
-  wandb: 0
+  wandb: 1
 losses:
   name:         'bootstrapped_cross_entropy2d'

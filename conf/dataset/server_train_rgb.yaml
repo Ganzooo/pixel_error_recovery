@@ -1,0 +1,58 @@
+## data specification
+### Train dataset.
+
+noised_img_path_pr1: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/pr_1_0/'
+gt_img_path_pr1: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/pr_1_0/index/'
+
+noised_img_path_pr0_5: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/pr_0_5/'
+gt_img_path_pr0_5: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/pr_0_5/index/'
+
+noised_img_path_col1: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/col_1/'
+gt_img_path_col1: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/col_1/index/'
+
+noised_img_path_col2: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/col_2/'
+gt_img_path_col2: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/col_2/index/'
+
+noised_img_path_cl2: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/cluster_2/'
+gt_img_path_cl2: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/cluster_2/index/'
+
+noised_img_path_cl3: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/cluster_3/'
+gt_img_path_cl3: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/cluster_3/index/'
+
+noised_img_path_pr5: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/pr_5_0/'
+gt_img_path_pr5: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/pr_5_0/index/'
+# noised_img_path_cl5: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_paper_final/cluster_5/'
+# gt_img_path_cl5: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_paper_final/cluster_5/index/'
+# noised_img_path_row1: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_paper_final/row_1/'
+# gt_img_path_row1: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_paper_final/row_1/index/'
+# noised_img_path_row2: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_paper_final/row_2/'
+# gt_img_path_row2: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_paper_final/row_2/index/'
+
+
+### Val dataset.
+noised_img_path_val_pr1: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/pr_1_0/'
+gt_img_path_val_pr1: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/pr_1_0/index/'
+
+noised_img_path_val_pr0_5: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/pr_0_5/'
+gt_img_path_val_pr0_5: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/pr_0_5/index/'
+
+noised_img_path_val_col1: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/col_1/'
+gt_img_path_val_col1: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/col_1/index/'
+
+noised_img_path_val_col2: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/col_2/'
+gt_img_path_val_col2: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/col_2/index/'
+
+noised_img_path_val_cl2: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/cluster_2/'
+gt_img_path_val_cl2: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/cluster_2/index/'
+
+noised_img_path_val_cl3: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/cluster_3/'
+gt_img_path_val_cl3: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/cluster_3/index/'
+
+noised_img_path_val_pr5: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/pr_5_0/'
+gt_img_path_val_pr5: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/pr_5_0/index/'
+# noised_img_path_val_cl5: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_paper_val_final/cluster_5/'
+# gt_img_path_val_cl5: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_paper_val_final/cluster_5/index/'
+# noised_img_path_val_row1: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_paper_val_final/row_1/'
+# gt_img_path_val_row1: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_paper_val_final/row_1/index/'
+# noised_img_path_val_row2: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_paper_val_final/row_2/'
+# gt_img_path_val_row2: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_paper_val_final/row_2/index/'

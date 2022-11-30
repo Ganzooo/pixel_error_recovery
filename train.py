@@ -280,35 +280,33 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_pred.jpg'), _pred.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_img_pred.jpg'), _imgPred.astype(np.uint8), color_domain='rgb')
                 
-                
-                
-                
             pbar.set_postfix(epoch=f'{epoch}',
                         acc=f'{acc_rec:0.4f}')
         
         score, class_iou = running_metrics_val.get_scores()
         _score=[]
         
-        
         for k, v in score.items():
-           #print(k, v)
            _score.append(v)
-           #logger.info("{}: {}".format(k, v))
-           #writer.add_scalar("val_metrics/{}".format(k), v, i + 1)
+           
         print('Accuracy mean({}) = {}'.format(name, mean(acc_db)))
         acc_all.append(mean(acc_db))
-        #for k, v in class_iou.items():
-        #    print("{}: {}".format(k, v))
-        #    #writer.add_scalar("val_metrics/cls_{}".format(k), v, i + 1)
         
         running_metrics_val.reset()    
+        
+        if cfg.train_config.wandb:
+            # Log the metrics
+            wandb.log({
+                "val/Valid Loss ({})".format(name): val_loss_meter.avg,
+                "val/Valid ACC {} - ".format(name): mean(acc_db),
+                })
     
     print("ALL Accuracy:::", mean(acc_all)) 
     if cfg.train_config.wandb:
         # Log the metrics
         wandb.log({
             "val/Valid Loss ({})".format(name): val_loss_meter.avg,
-            "val/Valid mIoU ({})".format(name): _score[3]
+            "val/Valid Acc-Mean ({})".format(name): mean(acc_all)
             })
     return mean(acc_all)
 
@@ -325,8 +323,7 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
         model.load_state_dict(torch.load(cfg.train_config.pretrain))
     else:
         print("train the model from scratch!")
-    
-    
+
     print("Check whether the pretrained model is restored...")
     if cfg.train_config.resume:
         # Load checkpoint model
@@ -358,7 +355,8 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
                                        dataloader=train_loader,
                                        device=device, epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
         
-        acc = valid_one_epoch(cfg, model, valid_loader, criterion,
+        if (epoch % cfg.train_config.test_every) == 0:
+            acc = valid_one_epoch(cfg, model, valid_loader, criterion,
                                         device=device,
                                         epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
         

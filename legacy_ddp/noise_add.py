@@ -18,13 +18,13 @@ parser = argparse.ArgumentParser(description='Generate patches from Full Resolut
 # parser.add_argument('--tar_dir', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_bw_paper_val_100',type=str, help='Directory of Noise generated images')
 
 # All val images
-# parser.add_argument('--src_dir', default='/dataset/Cityscapes/leftImg8bit/val_all/', type=str, help='Directory of GT images')
-# parser.add_argument('--tar_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_val',type=str, help='Directory of Converted GrayScale GT images')
-# parser.add_argument('--tar_dir', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val',type=str, help='Directory of Noise generated images')
+parser.add_argument('--src_dir', default='/dataset/Cityscapes/leftImg8bit/val_all/', type=str, help='Directory of GT images')
+parser.add_argument('--tar_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_val',type=str, help='Directory of Converted GrayScale GT images')
+parser.add_argument('--tar_dir', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val',type=str, help='Directory of Noise generated images')
 
-parser.add_argument('--src_dir', default='/dataset/Cityscapes/leftImg8bit/train_all/', type=str, help='Directory of GT images')
-parser.add_argument('--tar_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_train',type=str, help='Directory of Converted GrayScale GT images')
-parser.add_argument('--tar_dir', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_train',type=str, help='Directory of Noise generated images')
+# parser.add_argument('--src_dir', default='/dataset/Cityscapes/leftImg8bit/train_all/', type=str, help='Directory of GT images')
+# parser.add_argument('--tar_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_train',type=str, help='Directory of Converted GrayScale GT images')
+# parser.add_argument('--tar_dir', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_train',type=str, help='Directory of Noise generated images')
 
 
 #parser.add_argument('--src_dir', default='/dataset2/Cityscapes/leftImg8bit/train_all/', type=str, help='Directory of GT images')
@@ -60,9 +60,9 @@ os.makedirs(tar + '/pr_1_0/')
 os.makedirs(tar + '/pr_1_0/index/')
 os.makedirs(tar + '/pr_1_0/index_color/')
 
-# os.makedirs(tar + '/pr_5_0/')
-# os.makedirs(tar + '/pr_5_0/index/')
-# os.makedirs(tar + '/pr_5_0/index_color/')
+os.makedirs(tar + '/pr_5_0/')
+os.makedirs(tar + '/pr_5_0/index/')
+os.makedirs(tar + '/pr_5_0/index_color/')
 
 # os.makedirs(tar + '/pr_10_0/')
 # os.makedirs(tar + '/pr_10_0/index/')
@@ -459,18 +459,18 @@ def noise_add_row(iter, row):
 
     
 #Save Gt:
-for i in tqdm(range(0,len(img_files))):
-    save_gt(i)
+# for i in tqdm(range(0,len(img_files))):
+#     save_gt(i)
 
 #for i in tqdm(range(0,len(img_files))):
 #    noise_add_percent(i, per=5.0)
-#Parallel(n_jobs=NUM_CORES)(delayed(noise_add_percent)(i, per=5.0) for i in tqdm(range(len(img_files))))
+Parallel(n_jobs=NUM_CORES)(delayed(noise_add_percent)(i, per=5.0) for i in tqdm(range(len(img_files))))
 Parallel(n_jobs=NUM_CORES)(delayed(noise_add_percent)(i, per=1.0) for i in tqdm(range(len(img_files))))
 Parallel(n_jobs=NUM_CORES)(delayed(noise_add_percent)(i, per=0.5) for i in tqdm(range(len(img_files))))
 
 Parallel(n_jobs=NUM_CORES)(delayed(noise_add_cluster)(i, cluster=2) for i in tqdm(range(len(img_files))))
 Parallel(n_jobs=NUM_CORES)(delayed(noise_add_cluster)(i, cluster=3) for i in tqdm(range(len(img_files))))
-#Parallel(n_jobs=NUM_CORES)(delayed(noise_add_cluster)(i, cluster=5) for i in tqdm(range(len(img_files))))
+Parallel(n_jobs=NUM_CORES)(delayed(noise_add_cluster)(i, cluster=5) for i in tqdm(range(len(img_files))))
 
 Parallel(n_jobs=NUM_CORES)(delayed(noise_add_column)(i, col=1) for i in tqdm(range(len(img_files))))
 Parallel(n_jobs=NUM_CORES)(delayed(noise_add_column)(i, col=2) for i in tqdm(range(len(img_files))))

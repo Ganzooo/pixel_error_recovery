@@ -29,8 +29,8 @@ def get_dataset(cfg):
     #     store_in_ram=cfg.train_config.store_in_ram
     # )
     
-    #noiseDataTrain_pr5 = CustomDataSet(cfg.dataset.noised_img_path_pr5, cfg.dataset.gt_img_path_pr5, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
-    #    patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
+    noiseDataTrain_pr5 = CustomDataSet(cfg.dataset.noised_img_path_pr5, cfg.dataset.gt_img_path_pr5, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
+        patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
     noiseDataTrain_pr1 = CustomDataSet(cfg.dataset.noised_img_path_pr1, cfg.dataset.gt_img_path_pr1, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
          patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
     noiseDataTrain_pr0_5 = CustomDataSet(cfg.dataset.noised_img_path_pr0_5, cfg.dataset.gt_img_path_pr0_5, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
@@ -52,8 +52,8 @@ def get_dataset(cfg):
     #    patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
     
         
-    #noiseDataValid_pr5 = CustomDataSet(cfg.dataset.noised_img_path_val_pr5, cfg.dataset.gt_img_path_val_pr5, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
-    #    repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
+    noiseDataValid_pr5 = CustomDataSet(cfg.dataset.noised_img_path_val_pr5, cfg.dataset.gt_img_path_val_pr5, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
+        repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
     noiseDataValid_pr1 = CustomDataSet(cfg.dataset.noised_img_path_val_pr1, cfg.dataset.gt_img_path_val_pr1, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
         repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
     noiseDataValid_pr0_5 = CustomDataSet(cfg.dataset.noised_img_path_val_pr0_5, cfg.dataset.gt_img_path_val_pr0_5, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
@@ -83,7 +83,7 @@ def get_dataset(cfg):
     # u100  = Benchmark(cfg.dataset.u100_hr_path, cfg.dataset.u100_lr_path, scale=cfg.train_config.scale, colors=cfg.train_config.colors, store_in_ram=cfg.train_config.store_in_ram)
     train_dataloader = []
     #train_dataloader = DataLoader(dataset=noiseDataTrain_pr5, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)
-    #train_dataloader += [{'name': 'pr5', 'dataloader': DataLoader(dataset=noiseDataTrain_pr5, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
+    train_dataloader += [{'name': 'pr5', 'dataloader': DataLoader(dataset=noiseDataTrain_pr5, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
     train_dataloader += [{'name': 'pr1', 'dataloader': DataLoader(dataset=noiseDataTrain_pr1, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
     train_dataloader += [{'name': 'pr0_5', 'dataloader': DataLoader(dataset=noiseDataTrain_pr0_5, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
     train_dataloader += [{'name': 'col1', 'dataloader': DataLoader(dataset=noiseDataTrain_col1, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
@@ -95,7 +95,7 @@ def get_dataset(cfg):
     #train_dataloader += [{'name': 'row2', 'dataloader': DataLoader(dataset=noiseDataTrain_row2, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
     
     valid_dataloaders = []
-    #valid_dataloaders += [{'name': 'pr5', 'dataloader': DataLoader(dataset=noiseDataValid_pr5, batch_size=1, shuffle=False)}]
+    valid_dataloaders += [{'name': 'pr5', 'dataloader': DataLoader(dataset=noiseDataValid_pr5, batch_size=1, shuffle=False)}]
     valid_dataloaders += [{'name': 'pr0_5', 'dataloader': DataLoader(dataset=noiseDataValid_pr0_5, batch_size=cfg.train_config.batch_size_val, shuffle=False)}]
     valid_dataloaders += [{'name': 'pr1', 'dataloader': DataLoader(dataset=noiseDataValid_pr1, batch_size=cfg.train_config.batch_size_val, shuffle=False)}]
     valid_dataloaders += [{'name': 'cl2', 'dataloader': DataLoader(dataset=noiseDataValid_cl2, batch_size=cfg.train_config.batch_size_val, shuffle=False)}]
