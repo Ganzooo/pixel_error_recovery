@@ -28,6 +28,7 @@ class BRLayer(nn.Sequential):
         return super().forward(x)
 
 
+
 class HarDBlock_v2(nn.Module):
     def get_link(self, layer, base_ch, growth_rate, grmul):
         if layer == 0:
