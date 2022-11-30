@@ -1,0 +1,47 @@
+defaults:
+- dataset: server_train_rgb_all #demo #dataset_gray #main #server_train_rgb
+- model: UNetWithResnet50Encoder #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
+- optimizer: adam  #adam
+#- hydra/sweeper: optuna #Optuna hyperparamater optimization program
+
+train_config:
+  scale: 1
+  colors: 3
+  mode: 'hybrid'
+  seed:       101
+  debug:      False # set debug=False for Full Training
+  description: "server_train"
+  comment:    ${model.name}_ep_${train_config.epochs}_op_${optimizer.name}_lr_${optimizer.lr}_size_${train_config.patch_size}_loss_${losses.name}_des_${train_config.description}
+  device:     "cuda"
+  img_save_val: True
+  pixel_recovery: True
+  save_img_rec: True
+  warm_up: False
+
+  ## parameters for model training
+  patch_size: 128
+  batch_size: 128
+  batch_size_val: 32
+  data_repeat: 1
+  data_augment: 1
+  start_epoch: 0
+  epochs: 200
+  log_every: 100
+  test_every: 5
+  log_path: "./experiments"
+  lr: 0.0005
+  store_in_ram: 0
+  nclass: 2
+  ignore_index: 250
+  #pretrain: '/workspace/09_CHALLENGE/ECCV/ECBSR/chekpoint/model_x3_75.pt'
+  testmodelpath: '/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/best_epoch_unetencoder.pt'
+  pretrain: 
+  resume: 
+  mixed_pred: False
+  ## hardware specification
+  gpu_id: 0
+  threads: 16
+  wandb: 1
+  fsize: 2
+losses:
+  name:         'bootstrapped_cross_entropy2d'
