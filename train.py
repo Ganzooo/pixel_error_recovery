@@ -23,6 +23,7 @@ from statistics import mean, median
 import hydra
 from omegaconf import DictConfig
 from sklearn.metrics import accuracy_score
+from skimage.metrics import peak_signal_noise_ratio as psnr_calc
 
 # For colored terminal text
 from colorama import Fore, Back, Style
@@ -60,7 +61,7 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
         pbar = tqdm(enumerate(dataloader), total=len(dataloader), desc='Train {}:'.format(name))
         for step, (data) in pbar:
 
-            _image_patch, _gt_patch, _idx, _fname = data
+            _image_patch, _gt_patch, _idx, _fname, _ = data
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
                 
             batch_size = _image_patch.size(0)
@@ -157,6 +158,7 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
     name = 'PER'
     
     acc_all = []
+    psnr_all = []
     for _dl in dataloader:
         name = _dl['name']
         dataloader = _dl['dataloader']
@@ -166,9 +168,10 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
         count = 0
         
         acc_db = []
+        psnr_db = []
         dirPath = "./result_image/val/{}/".format(name)
                  
-        for _image_patch, _gt_patch, _idx, _fname in pbar:
+        for _image_patch, _gt_patch, _idx, _fname, _imageOrg_patch in pbar:
             
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
             
@@ -218,16 +221,21 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                         crop_neighbor = np.array(_imgPred[_id0-filter_size:_id0+filter_size,_id1-filter_size:_id1+filter_size,:])
                         _imgPred[_id0,_id1,:] = (median(np.sort(crop_neighbor[:,:,0].ravel())),median(np.sort(crop_neighbor[:,:,1].ravel())),median(np.sort(crop_neighbor[:,:,2].ravel())))
                     _imgRec = _imgPred[filter_size:nH+filter_size,filter_size:nW+filter_size,:].astype(np.uint8)
-                _end_pixel_rec = time.time()
-                
-                if cfg.train_config.save_img_rec:
-                    #fname = str(name) + '_munster_' + str(int(_idx[b])).zfill(6) + '_000019_leftImg8bit_recover.png'
-                    fname = os.path.basename(_fname[b])
-                    save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), _imgRec.astype(np.uint8), color_domain='rgb')
-                
-                    #with open(os.path.join(dirPath,"result.csv"), "a") as file:
-                    #    file.write("{},{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname),int(total_erro_pixel_GT.data.cpu().numpy()), int(total_erro_pixel_Pred.data.cpu().numpy()), str(acc_rec), (_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
                     
+                    _imgOrg = _imageOrg_patch[b]
+                    psnr = psnr_calc(_imgOrg.numpy(),_imgRec)
+                    psnr_db.append(psnr)
+                    
+                    _end_pixel_rec = time.time()
+                
+                    if cfg.train_config.save_img_rec:
+                        #fname = str(name) + '_munster_' + str(int(_idx[b])).zfill(6) + '_000019_leftImg8bit_recover.png'
+                        fname = os.path.basename(_fname[b])
+                        save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), _imgRec.astype(np.uint8), color_domain='rgb')
+                    
+                        with open(os.path.join(dirPath,"result.csv"), "a") as file:
+                            file.write("{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname), str(acc_rec),str(psnr), (_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
+            
             if cfg.train_config.img_save_val and count < 81:  
                 pred = _pred.data.max(1)[1].cpu().numpy()
                 gt = _gt_patch.data.cpu().numpy()
@@ -267,7 +275,7 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_pred.jpg'), _pred.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_img_pred.jpg'), _imgPred.astype(np.uint8), color_domain='rgb')
                 
-            pbar.set_postfix(epoch=f'{epoch}', acc=f'{acc_rec:0.4f}')
+            pbar.set_postfix(epoch=f'{epoch}', acc=f'{acc_rec:0.4f}', psnr=f'{psnr:0.2f}')
         
         score, class_iou = running_metrics_val.get_scores()
         _score=[]
@@ -278,22 +286,28 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
         print('Accuracy mean({}) = {}'.format(name, mean(acc_db)))
         acc_all.append(mean(acc_db))
         
+        if cfg.train_config.pixel_recovery:
+            print('PSNR mean({}) = {}'.format(name, mean(psnr_db)))    
+            psnr_all.append(mean(psnr_db))
+            
         running_metrics_val.reset()    
         
         if cfg.train_config.wandb:
-            # Log the metrics
-            wandb.log({
-                "val/Valid Loss ({})".format(name): val_loss_meter.avg,
-                "val/Valid ACC {} - ".format(name): mean(acc_db),
-                })
+            if cfg.train_config.pixel_recovery:
+                                # Log the metrics
+                wandb.log({
+                    "val/Valid Loss ({})".format(name): val_loss_meter.avg,
+                    "val/Valid ACC {} - ".format(name): mean(acc_db),
+                    "val/Valid PSNR {} - ".format(name): mean(psnr_db),
+                    })
+            else: 
+                # Log the metrics
+                wandb.log({
+                    "val/Valid Loss ({})".format(name): val_loss_meter.avg,
+                    "val/Valid ACC {} - ".format(name): mean(acc_db),
+                    })
     
     print("ALL Accuracy:::", mean(acc_all)) 
-    if cfg.train_config.wandb:
-        # Log the metrics
-        wandb.log({
-            "val/Valid Loss ({})".format(name): val_loss_meter.avg,
-            "val/Valid Acc-Mean ({})".format(name): mean(acc_all)
-            })
     return mean(acc_all)
 
 def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs, train_loader, valid_loader, run_log_wandb):
@@ -337,9 +351,9 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
         acc = 0
         print(f'Epoch {epoch}/{num_epochs}', end='')
         
-        train_one_epoch(cfg, model, optimizer, scheduler, criterion=criterion,
-                                       dataloader=train_loader,
-                                       device=device, epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
+        # train_one_epoch(cfg, model, optimizer, scheduler, criterion=criterion,
+        #                                dataloader=train_loader,
+        #                                device=device, epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
         
         if (epoch % cfg.train_config.test_every) == 0:
             acc = valid_one_epoch(cfg, model, valid_loader, criterion,
