@@ -238,13 +238,12 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                     with open(os.path.join(dirPath,"result.csv"), "a") as file:
                         file.write("{},{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname),int(total_erro_pixel_GT.data.cpu().numpy()), int(total_erro_pixel_Pred.data.cpu().numpy()), str(acc_rec), (_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
                     
-            if cfg.train_config.img_save_val:  
+            if cfg.train_config.img_save_val and count < 81:  
                 pred = _pred.data.max(1)[1].cpu().numpy()
                 gt = _gt_patch.data.cpu().numpy()
                 img = _image_patch.data.cpu().numpy()
                 
                 fname = str(count).zfill(4)
-                
                 
                 _pred = pred[0]
                 _pred = np.expand_dims(_pred,axis=0)
@@ -389,7 +388,7 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
         #last_model_wts = copy.deepcopy(model.state_dict())
         PATH = f"last_epoch.pt"
         torch.save(model.state_dict(), PATH)
-        print(); print()
+        #print(); print()
         
         torch.cuda.empty_cache()
         gc.collect()
