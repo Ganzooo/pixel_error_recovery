@@ -137,6 +137,7 @@ class CustomDataSet(data.Dataset):
             # _gt[_gt == 0] = 250 
             # _gt[_gt == 255] = 1
             _gt = torch.from_numpy(_gt.copy()).long()
+            _imageOrg = torch.from_numpy(_imageOrg.copy()).long()
             return _image, _gt, idx, _fname, _imageOrg
 
 if __name__ == '__main__':
