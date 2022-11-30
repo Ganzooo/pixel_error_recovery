@@ -130,6 +130,7 @@ class CustomDataSet(data.Dataset):
             _image = _image.transpose(2,0,1)
             _image = _image / 255.
             _image = torch.from_numpy(_image).float()
+            _imageOrg = torch.from_numpy(_imageOrg.copy())
             
             #_gt = _gt.transpose(2,0,1)
             #_gt = np.squeeze(_gt, axis=0) 
@@ -137,7 +138,7 @@ class CustomDataSet(data.Dataset):
             # _gt[_gt == 0] = 250 
             # _gt[_gt == 255] = 1
             _gt = torch.from_numpy(_gt.copy()).long()
-            _imageOrg = torch.from_numpy(_imageOrg.copy()).long()
+            
             return _image, _gt, idx, _fname, _imageOrg
 
 if __name__ == '__main__':
