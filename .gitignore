@@ -134,3 +134,4 @@ outputs/*
 checkpoint/best_epoch_unetencoder.pt
 outputs/*
 .vscode/extensions.json
+checkpoint/resume/last_epoch.pt
