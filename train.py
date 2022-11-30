@@ -351,9 +351,9 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
         acc = 0
         print(f'Epoch {epoch}/{num_epochs}', end='')
         
-        # train_one_epoch(cfg, model, optimizer, scheduler, criterion=criterion,
-        #                                dataloader=train_loader,
-        #                                device=device, epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
+        train_one_epoch(cfg, model, optimizer, scheduler, criterion=criterion,
+                                       dataloader=train_loader,
+                                       device=device, epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
         
         if (epoch % cfg.train_config.test_every) == 0:
             acc = valid_one_epoch(cfg, model, valid_loader, criterion,
