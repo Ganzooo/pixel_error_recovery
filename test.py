@@ -22,6 +22,9 @@ from statistics import mean, median
 
 import hydra
 from omegaconf import DictConfig
+from sklearn.metrics import accuracy_score
+from skimage.metrics import peak_signal_noise_ratio as psnr_calc
+from skimage.metrics import structural_similarity as ssim_calc
 
 # For colored terminal text
 from colorama import Fore, Back, Style
@@ -156,6 +159,8 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
     name = 'PER'
     
     acc_all = []
+    psnr_all = []
+    ssim_all = []
     for _dl in dataloader:
         name = _dl['name']
         dataloader = _dl['dataloader']
@@ -165,14 +170,11 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
         count = 0
         
         acc_db = []
+        psnr_db = []
+        ssim_db = []
         dirPath = "./result_image/val/{}/".format(name)
-
-        if cfg.train_config.warm_up:  
-            for i in range(20): 
-                tmp = torch.rand([1,3,512,1024]).cuda()
-                _ = model(tmp)
                  
-        for _image_patch, _gt_patch, _idx in pbar:
+        for _image_patch, _gt_patch, _idx, _fname, _imageOrg_patch in pbar:
             
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
             
@@ -185,7 +187,9 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             count += _image_patch.size(0)
             
             _imgPred = []
+            _imgRec = []
             if cfg.train_config.pixel_recovery:
+                filter_size = cfg.train_config.fsize
                 #pred = np.squeeze(_pred.data.max(1)[1].cpu().numpy(), axis=0)
                 #gt = np.squeeze(_gt_patch.data.cpu().numpy(), axis=0)
 
@@ -193,24 +197,12 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 for b in range(_pred.shape[0]):
                     #pred = _pred.data.max(1)[1].squeeze(axis=0)
                     pred = _pred.data.max(1)[1][b]
-                    #pred = _pred[b]
-                    unique, counts = pred.unique(return_counts=True)
-                    if len(counts) >1:
-                        total_erro_pixel_Pred = counts[1]
-                    else: 
-                        total_erro_pixel_Pred = 1
-                        
                     index = torch.where(pred==1)
                     
-                    #GT date
                     gt = _gt_patch[b]
-                    unique, counts = gt.unique(return_counts=True)
-                    if len(counts) >1:
-                        total_erro_pixel_GT = counts[1]
-                    else: 
-                        total_erro_pixel_Pred = 1
                     
-                    acc_rec = np.round(float(total_erro_pixel_Pred/total_erro_pixel_GT),2)
+                    acc_rec = accuracy_score(gt.cpu(), pred.cpu())
+                    #acc_rec = np.round(float(total_erro_pixel_Pred/total_erro_pixel_GT),2)
                     acc_db.append(acc_rec)
                     
                     ### --- 
@@ -219,35 +211,47 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                     img = _image_patch[b].data.cpu().numpy().transpose(1,2,0)
                     _start_pixel_rec = time.time()
                     nH, nW = img.shape[0], img.shape[1]
-                    _imgPred = np.full((nH+4, nW+4, 3), (128,128,128))
-                    _imgPred[1:nH+1,1:nW+1,:] = img*255
+                    _imgPred = np.full((nH+(filter_size*2), nW+(filter_size*2), 3), (128,128,128))
+                    _imgPred[filter_size:nH+filter_size,filter_size:nW+filter_size,:] = img*255
                     
                     #index = np.where(_pred_one==1)
                     #_index = np.add(index,1)
                     
                     #for _id0, _id1 in zip(index[0,:], index[1,:]):
                     for _id0, _id1 in zip(index[0].data.cpu().numpy(), index[1].data.cpu().numpy()):
-                        _id0 += 1
-                        _id1 += 1
-                        crop_neighbor = np.array(_imgPred[_id0-1:_id0+1,_id1-1:_id1+1,:])
+                        _id0 += filter_size
+                        _id1 += filter_size
+                        crop_neighbor = np.array(_imgPred[_id0-filter_size:_id0+filter_size,_id1-filter_size:_id1+filter_size,:])
                         _imgPred[_id0,_id1,:] = (median(np.sort(crop_neighbor[:,:,0].ravel())),median(np.sort(crop_neighbor[:,:,1].ravel())),median(np.sort(crop_neighbor[:,:,2].ravel())))
-                
-                _end_pixel_rec = time.time()
-                
-                if cfg.train_config.save_img_rec:
-                    fname = str(name) + '_munster_' + str(int(_idx)).zfill(6) + '_000019_leftImg8bit_recover.jpg'
-                    save_img(os.path.join(dirPath, str(epoch), fname), _imgPred[1:nH+1,1:nW+1,:].astype(np.uint8), color_domain='rgb')
-                
-                    with open(os.path.join(dirPath,"result.csv"), "a") as file:
-                        file.write("{},{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname),int(total_erro_pixel_GT.data.cpu().numpy()), int(total_erro_pixel_Pred.data.cpu().numpy()), str(acc_rec), (_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
+                    _imgRec = _imgPred[filter_size:nH+filter_size,filter_size:nW+filter_size,:].astype(np.uint8)
                     
+                    _imgOrg = _imageOrg_patch[b].numpy()
+                    psnr = psnr_calc(_imgOrg,_imgRec)
+                    
+                    if _imgOrg.shape[2] == 3:
+                        ssim_R = ssim_calc(_imgOrg[:,:,0],_imgRec[:,:,0], full=True)
+                        ssim_G = ssim_calc(_imgOrg[:,:,1],_imgRec[:,:,1], full=True)
+                        ssim_B = ssim_calc(_imgOrg[:,:,2],_imgRec[:,:,2], full=True)
+                        ssim = mean([ssim_R[0], ssim_G[0], ssim_B[0]])
+                    ssim_db.append(ssim)
+                    psnr_db.append(psnr)
+                    
+                    _end_pixel_rec = time.time()
+                
+                    if cfg.train_config.save_img_rec:
+                        #fname = str(name) + '_munster_' + str(int(_idx[b])).zfill(6) + '_000019_leftImg8bit_recover.png'
+                        fname = os.path.basename(_fname[b])
+                        save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), _imgRec.astype(np.uint8), color_domain='rgb')
+                    
+                        with open(os.path.join(dirPath,"result.csv"), "a") as file:
+                            file.write("{},{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname), str(acc_rec),str(psnr), str(ssim),(_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
+            
             if cfg.train_config.img_save_val:  
                 pred = _pred.data.max(1)[1].cpu().numpy()
                 gt = _gt_patch.data.cpu().numpy()
                 img = _image_patch.data.cpu().numpy()
                 
                 fname = str(count).zfill(4)
-                
                 
                 _pred = pred[0]
                 _pred = np.expand_dims(_pred,axis=0)
@@ -273,46 +277,52 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 _gt[_gt == 0] = 0
                 _gt[_gt == 1] = 255
                 
-                ### ---
-                ### ---
                 ### Save images
-                temp0 = np.concatenate((_gt, _img, _pred, _imgPred[1:nH+1,1:nW+1,:]),axis=1)
+                temp0 = np.concatenate((_gt, _img, _pred, _imgRec),axis=1)
                 save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'), temp0.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_gt.jpg'), _gt.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_img.jpg'), _img.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_pred.jpg'), _pred.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_img_pred.jpg'), _imgPred.astype(np.uint8), color_domain='rgb')
                 
-                
-                
-                
-            pbar.set_postfix(epoch=f'{epoch}',
-                        acc=f'{acc_rec:0.4f}')
+            pbar.set_postfix(epoch=f'{epoch}', acc=f'{acc_rec:0.4f}', psnr=f'{psnr:0.2f}', ssim=f'{ssim:0.2f}')
         
         score, class_iou = running_metrics_val.get_scores()
         _score=[]
         
-        
         for k, v in score.items():
-           #print(k, v)
            _score.append(v)
-           #logger.info("{}: {}".format(k, v))
-           #writer.add_scalar("val_metrics/{}".format(k), v, i + 1)
+           
         print('Accuracy mean({}) = {}'.format(name, mean(acc_db)))
         acc_all.append(mean(acc_db))
-        #for k, v in class_iou.items():
-        #    print("{}: {}".format(k, v))
-        #    #writer.add_scalar("val_metrics/cls_{}".format(k), v, i + 1)
         
+        if cfg.train_config.pixel_recovery:
+            print('PSNR mean({}) = {}'.format(name, mean(psnr_db)))    
+            psnr_all.append(mean(psnr_db))
+            
+            print('SSIM mean({}) = {}'.format(name, mean(ssim_db)))    
+            ssim_all.append(mean(ssim_db))
+            
         running_metrics_val.reset()    
+        
+        if cfg.train_config.wandb:
+            if cfg.train_config.pixel_recovery:
+                                # Log the metrics
+                wandb.log({
+                    "val/Valid Loss ({})".format(name): val_loss_meter.avg,
+                    "val/Valid ACC {} - ".format(name): mean(acc_db),
+                    "val/Valid PSNR {} - ".format(name): mean(psnr_db),
+                    "val/Valid SSIM {} - ".format(name): mean(ssim_db),
+                    })
+            else: 
+                # Log the metrics
+                wandb.log({
+                    "val/Valid Loss ({})".format(name): val_loss_meter.avg,
+                    "val/Valid ACC {} - ".format(name): mean(acc_db),
+                    })
     
     print("ALL Accuracy:::", mean(acc_all)) 
-    if cfg.train_config.wandb:
-        # Log the metrics
-        wandb.log({
-            "val/Valid Loss ({})".format(name): val_loss_meter.avg,
-            "val/Valid mIoU ({})".format(name): _score[3]
-            })
+    return mean(acc_all)
 
 def run_validate(cfg, model, optimizer, scheduler, criterion, device, num_epochs, train_loader, valid_loader, model_path):
     
@@ -326,7 +336,8 @@ def run_validate(cfg, model, optimizer, scheduler, criterion, device, num_epochs
     log_name = os.path.join("log.txt")
     sys.stdout = utils_sr.ExperimentLogger(log_name, sys.stdout)
     stat_dict = utils_sr.get_stat_dict()
-        
+    
+    cfg.train_config.wandb = 0
     valid_one_epoch(cfg, model, valid_loader, criterion,
                                     device=device,
                                     epoch=0, stat_dict=stat_dict, run_log_wandb=None)
