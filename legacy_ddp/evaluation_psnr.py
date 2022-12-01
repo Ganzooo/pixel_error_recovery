@@ -12,17 +12,19 @@ import pandas as pd
 from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description='Defected NOISE Recovery Algorithm')
-parser.add_argument('--src_gt', default='/dataset2/CITYSCAPES_DATASET/DEFECTION_NOISE_PAPER/gt_d2/',type=str, help='Directory for image patches')
-parser.add_argument('--src_noise', default='/dataset2/CITYSCAPES_DATASET/DEFECTION_NOISE_PAPER/noise_paper_d2/',type=str, help='Directory for image patches')
+parser.add_argument('--src_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_val/',type=str, help='Directory for image patches')
+parser.add_argument('--src_noise', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/',type=str, help='Directory for image patches')
 parser.add_argument('--tar', default='./result_d2/', type=str, help='Directory of Recoverd images')
+
 parser.add_argument('--num_cores', default=1, type=int, help='Number of CPU Cores')
-parser.add_argument('--recovery_type', default='DPD_D', type=str, help='recovery type: DPD_D, DPD_M')
+parser.add_argument('--recovery_type', default='DPD_M', type=str, help='recovery type: DPD_D, DPD_M')
 
 args = parser.parse_args()
 REC_TYPE = args.recovery_type 
 args.tar = args.tar + REC_TYPE 
 
 noiseDir = []
+noiseDir.append(os.path.join(args.src_noise, 'pr_5_0'))
 noiseDir.append(os.path.join(args.src_noise, 'pr_0_5'))
 noiseDir.append(os.path.join(args.src_noise, 'pr_1_0'))
 noiseDir.append(os.path.join(args.src_noise, 'col_1')) 
@@ -33,6 +35,7 @@ noiseDir.append(os.path.join(args.src_noise, 'cluster_3'))
 gtDir = args.src_gt
 
 tarDir = []
+tarDir.append(os.path.join(args.tar, 'pr_5_0'))
 tarDir.append(os.path.join(args.tar, 'pr_0_5'))
 tarDir.append(os.path.join(args.tar, 'pr_1_0'))
 tarDir.append(os.path.join(args.tar, 'col_1')) 
@@ -41,6 +44,7 @@ tarDir.append(os.path.join(args.tar, 'cluster_2'))
 tarDir.append(os.path.join(args.tar, 'cluster_3'))
 
 resultTxt = []
+resultTxt.append(os.path.join(args.tar, 'result_psnr_pr_5_0.csv'))
 resultTxt.append(os.path.join(args.tar, 'result_psnr_pr_0_5.csv'))
 resultTxt.append(os.path.join(args.tar, 'result_psnr_pr_1_0.csv'))
 resultTxt.append(os.path.join(args.tar, 'result_psnr_col_1.csv')) 
@@ -86,7 +90,7 @@ if __name__=='__main__':
     for _csv in resultTxt:
         if os.path.exists(_csv):
             os.remove(_csv)
-        with open(_csv, 'a', newline='') as csvfile: 
+        with open(_csv, 'w', newline='') as csvfile: 
             writer = csv.writer(csvfile)
             writer.writerow(['File Name', 'PSNR_gt', 'PSNR_rec', 'SSIM_gt', 'SSIM_rec'])
     #     #print("The file has been deleted successfully")
