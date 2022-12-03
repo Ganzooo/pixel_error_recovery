@@ -13,10 +13,11 @@ import csv
 from torch import int8
 import pandas as pd
 from tqdm import tqdm
+from sklearn.metrics import accuracy_score
 
 parser = argparse.ArgumentParser(description='Defected NOISE Recovery Algorithm')
-parser.add_argument('--src_gt', default='/dataset2/CITYSCAPES_DATASET/DEFECTION_NOISE_PAPER/gt_d2/',type=str, help='Directory for image patches')
-parser.add_argument('--src_noise', default='/dataset2/CITYSCAPES_DATASET/DEFECTION_NOISE_PAPER/noise_paper_d2/',type=str, help='Directory for image patches')
+parser.add_argument('--src_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_val/',type=str, help='Directory for image patches')
+parser.add_argument('--src_noise', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/',type=str, help='Directory for image patches')
 parser.add_argument('--tar', default='./result_d2/', type=str, help='Directory of Recoverd images')
 
 parser.add_argument('--num_cores', default=1, type=int, help='Number of CPU Cores')
@@ -27,6 +28,7 @@ REC_TYPE = args.recovery_type
 args.tar = args.tar + REC_TYPE 
 
 noiseDir = []
+noiseDir.append(os.path.join(args.src_noise, 'pr_5_0', 'index'))
 noiseDir.append(os.path.join(args.src_noise, 'pr_0_5', 'index'))
 noiseDir.append(os.path.join(args.src_noise, 'pr_1_0', 'index'))
 noiseDir.append(os.path.join(args.src_noise, 'col_1', 'index')) 
@@ -37,6 +39,7 @@ noiseDir.append(os.path.join(args.src_noise, 'cluster_3', 'index'))
 gtDir = args.src_gt
 
 tarDir = []
+tarDir.append(os.path.join(args.tar, 'pr_5_0', 'index'))
 tarDir.append(os.path.join(args.tar, 'pr_0_5', 'index'))
 tarDir.append(os.path.join(args.tar, 'pr_1_0', 'index'))
 tarDir.append(os.path.join(args.tar, 'col_1', 'index')) 
@@ -45,6 +48,7 @@ tarDir.append(os.path.join(args.tar, 'cluster_2', 'index'))
 tarDir.append(os.path.join(args.tar, 'cluster_3', 'index'))
 
 resultCSV = []
+resultCSV.append(os.path.join(args.tar, 'sensitivity_pr_5_0.csv'))
 resultCSV.append(os.path.join(args.tar, 'sensitivity_pr_0_5.csv'))
 resultCSV.append(os.path.join(args.tar, 'sensitivity_pr_1_0.csv'))
 resultCSV.append(os.path.join(args.tar, 'sensitivity_col_1.csv')) 
@@ -76,17 +80,25 @@ def errorSensitivity(idx, filePath2_noise, filePath3_rec, csvPath):
     #print(filePath2_noise[idx])
     #print(filePath3_rec[idx])
     
+    
     noiseData = cv2.imread(filePath2_noise[idx], cv2.IMREAD_GRAYSCALE)
     _noiseData = noiseData.flatten()
     
-    recData = cv2.imread(filePath3_rec[idx], cv2.IMREAD_GRAYSCALE)
+    recDataOrg = cv2.imread(filePath3_rec[idx])
+    if recDataOrg.shape[2] == 3:
+        recData = cv2.cvtColor(recDataOrg, cv2.COLOR_BGR2GRAY)
+        recData[recData > 1] = 1
+    else: 
+        recData = cv2.cvtColor(recDataOrg, cv2.COLOR_BGR2GRAY)
     _recData = recData.flatten()
     
-    tn, fp, fn, tp = confusion_matrix(_noiseData, _recData, labels=[0,255]).ravel()
-    _SENSIBILITY = np.float(tp / (tp+fn))
-    _SPECIFICITY = np.float(tn / (tn+fp))
-    _PPV = np.float(tp / (tp + fp))
-    _NPV = np.float(tn / (tn + fn))
+    acc = accuracy_score(noiseData, recData)
+    tn, fp, fn, tp, _SENSIBILITY, _SPECIFICITY, _PPV, _NPV = 0, 0, 0, 0, 0, 0, 0, 0
+    #tn, fp, fn, tp = confusion_matrix(noiseData, recData, labels=[0,1]).ravel()
+    # _SENSIBILITY = np.float(tp / (tp+fn))
+    # _SPECIFICITY = np.float(tn / (tn+fp))
+    # _PPV = np.float(tp / (tp + fp))
+    # _NPV = np.float(tn / (tn + fn))
     
     # print('TN:',tn)
     # print('FP:',fp)
@@ -99,7 +111,7 @@ def errorSensitivity(idx, filePath2_noise, filePath3_rec, csvPath):
     #result = "name:{},noise:{},rec:{},".format(fname[:-4], _psnr_gt, _psnr_rec)
     with open(csvPath, 'a', newline='') as csvfile: 
         writer = csv.writer(csvfile)
-        writer.writerow([fname[:-4], tn, fp, fn, tp, _SENSIBILITY, _SPECIFICITY, _PPV, _NPV])
+        writer.writerow([fname[:-4], tn, fp, fn, tp, _SENSIBILITY, _SPECIFICITY, _PPV, _NPV, acc])
     
 if __name__=='__main__':
     for _csv in resultCSV:
@@ -107,7 +119,7 @@ if __name__=='__main__':
             os.remove(_csv)
         with open(_csv, 'a', newline='') as csvfile: 
             writer = csv.writer(csvfile)
-            writer.writerow(['File Name', 'TN', 'FP', 'FN', 'TP', 'SENSIBILITY', "SPECIFICITY", "PPV", "NPV"])
+            writer.writerow(['File Name', 'TN', 'FP', 'FN', 'TP', 'SENSIBILITY', "SPECIFICITY", "PPV", "NPV", "ACC"])
         #print("The file has been deleted successfully")
     
     for _idx in tqdm(range(len(noiseDir)), desc="Recovery Noise type"):
@@ -127,6 +139,6 @@ if __name__=='__main__':
         _spe_avg = np.average(data['SPECIFICITY'])
         with open(_csv, 'a', newline='') as csvfile: 
             writer = csv.writer(csvfile)
-            writer.writerow([':::AVERAGE ALL:::', ' ', ' ', ' ', ' ', np.average(data['SENSIBILITY']), np.average(data['SPECIFICITY']), np.average(data['PPV']), np.average(data['NPV'])])
+            writer.writerow([':::AVERAGE ALL:::', ' ', ' ', ' ', ' ', np.average(data['SENSIBILITY']), np.average(data['SPECIFICITY']), np.average(data['PPV']), np.average(data['NPV']), np.average(data['ACC'])])
         
         

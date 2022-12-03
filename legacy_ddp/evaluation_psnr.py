@@ -10,10 +10,15 @@ from skimage.metrics import structural_similarity as ssim
 import csv
 import pandas as pd
 from tqdm import tqdm
+from statistics import mean, median
+
+from skimage.metrics import peak_signal_noise_ratio as psnr_calc
+from skimage.metrics import structural_similarity as ssim_calc
 
 parser = argparse.ArgumentParser(description='Defected NOISE Recovery Algorithm')
 parser.add_argument('--src_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_val/',type=str, help='Directory for image patches')
 parser.add_argument('--src_noise', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/',type=str, help='Directory for image patches')
+#parser.add_argument('--src_noise', default='./result_d2/',type=str, help='Directory for image patches')
 parser.add_argument('--tar', default='./result_d2/', type=str, help='Directory of Recoverd images')
 
 parser.add_argument('--num_cores', default=1, type=int, help='Number of CPU Cores')
@@ -53,7 +58,7 @@ resultTxt.append(os.path.join(args.tar, 'result_psnr_cluster_2.csv'))
 resultTxt.append(os.path.join(args.tar, 'result_psnr_cluster_3.csv'))
 
 def calc_psnr(y, y_target):
-    h, w = y.shape
+    h, w, _ = y.shape
     y = np.clip(np.round(y), 0, 255).astype(np.float32)
     y_target = np.clip(np.round(y_target), 0, 255).astype(np.float32)
     
@@ -68,7 +73,7 @@ def calc_ssim(y, y_target):
 
     return score
 
-def imgPSNR(idx, filePath1_gt, filePath2_noise, filePath3_rec, txtPath):
+def imgPSNR_grayscale(idx, filePath1_gt, filePath2_noise, filePath3_rec, txtPath):
     #print(idx)
     gtImg = cv2.imread(filePath1_gt[idx], cv2.IMREAD_GRAYSCALE)
     noiseImg= cv2.imread(filePath2_noise[idx], cv2.IMREAD_GRAYSCALE)
@@ -76,8 +81,28 @@ def imgPSNR(idx, filePath1_gt, filePath2_noise, filePath3_rec, txtPath):
     
     _psnr_gt = calc_psnr(gtImg, noiseImg)
     _psnr_rec = calc_psnr(gtImg, recImg)
+    
     _ssim_gt = calc_ssim(gtImg, noiseImg)
     _ssim_rec = calc_ssim(gtImg, recImg)
+    
+    fname = os.path.split(filePath1_gt[idx])[1]
+    #result = "name:{},noise:{},rec:{},".format(fname[:-4], _psnr_gt, _psnr_rec)
+    with open(txtPath, 'a', newline='') as csvfile: 
+        writer = csv.writer(csvfile)
+        writer.writerow([fname[:-4], _psnr_gt, _psnr_rec, _ssim_gt, _ssim_rec])
+    #print("PSNR:",_psnr)
+
+def imgPSNR_RGB(idx, filePath1_gt, filePath2_noise, filePath3_rec, txtPath):
+    #print(idx)
+    gtImg = cv2.imread(filePath1_gt[idx])
+    noiseImg= cv2.imread(filePath2_noise[idx])
+    recImg = cv2.imread(filePath3_rec[idx])
+    
+    _psnr_gt = psnr_calc(gtImg, noiseImg)
+    _psnr_rec = psnr_calc(gtImg, recImg)
+
+    _ssim_gt = mean([ssim_calc(gtImg[:,:,0], noiseImg[:,:,0]), ssim_calc(gtImg[:,:,1], noiseImg[:,:,1]), ssim_calc(gtImg[:,:,2], noiseImg[:,:,2])])
+    _ssim_rec = mean([ssim_calc(gtImg[:,:,0], recImg[:,:,0]), ssim_calc(gtImg[:,:,1], recImg[:,:,1]), ssim_calc(gtImg[:,:,2], recImg[:,:,2])])
     
     fname = os.path.split(filePath1_gt[idx])[1]
     #result = "name:{},noise:{},rec:{},".format(fname[:-4], _psnr_gt, _psnr_rec)
@@ -103,7 +128,7 @@ if __name__=='__main__':
         _txt = resultTxt[_idx]
         assert len(_noiseImgDir) == len(_gtImgDir), "check folder name"
         
-        Parallel(n_jobs=args.num_cores)(delayed(imgPSNR)(idx=_idx, filePath1_gt=_gtImgDir, filePath2_noise=_noiseImgDir, filePath3_rec=_recImgDir, txtPath=_txt) for _idx in tqdm(range(0,len(_gtImgDir)), desc="    Images"))
+        Parallel(n_jobs=args.num_cores)(delayed(imgPSNR_RGB)(idx=_idx, filePath1_gt=_gtImgDir, filePath2_noise=_noiseImgDir, filePath3_rec=_recImgDir, txtPath=_txt) for _idx in tqdm(range(0,len(_gtImgDir)), desc="    Images"))
         
     for _csv in resultTxt:
         data = pd.read_csv(_csv)

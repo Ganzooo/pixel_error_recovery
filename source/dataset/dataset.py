@@ -19,21 +19,21 @@ def get_dataset(cfg):
     train_dataloaders = []
     valid_dataloaders = []
     
-    erro_split_db = 0
+    erro_split_db = 1
     if erro_split_db:
-        noiseDataTrain_pr5 = CustomDataSet(cfg.dataset.noised_img_path_pr5, cfg.dataset.gt_img_path_pr5, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
+        noiseDataTrain_pr5 = CustomDataSet(cfg.dataset.noised_img_path_pr5, cfg.dataset.gt_img_path_pr5, cfg.dataset.img_org_path_all, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
             patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
-        noiseDataTrain_pr1 = CustomDataSet(cfg.dataset.noised_img_path_pr1, cfg.dataset.gt_img_path_pr1, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
+        noiseDataTrain_pr1 = CustomDataSet(cfg.dataset.noised_img_path_pr1, cfg.dataset.gt_img_path_pr1, cfg.dataset.img_org_path_all, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
             patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
-        noiseDataTrain_pr0_5 = CustomDataSet(cfg.dataset.noised_img_path_pr0_5, cfg.dataset.gt_img_path_pr0_5, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
+        noiseDataTrain_pr0_5 = CustomDataSet(cfg.dataset.noised_img_path_pr0_5, cfg.dataset.gt_img_path_pr0_5, cfg.dataset.img_org_path_all, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
             patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
-        noiseDataTrain_col1 = CustomDataSet(cfg.dataset.noised_img_path_col1, cfg.dataset.gt_img_path_col1, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
+        noiseDataTrain_col1 = CustomDataSet(cfg.dataset.noised_img_path_col1, cfg.dataset.gt_img_path_col1, cfg.dataset.img_org_path_all, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
             patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
-        noiseDataTrain_col2 = CustomDataSet(cfg.dataset.noised_img_path_col2, cfg.dataset.gt_img_path_col2, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
+        noiseDataTrain_col2 = CustomDataSet(cfg.dataset.noised_img_path_col2, cfg.dataset.gt_img_path_col2, cfg.dataset.img_org_path_all, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
             patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
-        noiseDataTrain_cl2 = CustomDataSet(cfg.dataset.noised_img_path_cl2, cfg.dataset.gt_img_path_cl2, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
+        noiseDataTrain_cl2 = CustomDataSet(cfg.dataset.noised_img_path_cl2, cfg.dataset.gt_img_path_cl2, cfg.dataset.img_org_path_all, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
             patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
-        noiseDataTrain_cl3 = CustomDataSet(cfg.dataset.noised_img_path_cl3, cfg.dataset.gt_img_path_cl3, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
+        noiseDataTrain_cl3 = CustomDataSet(cfg.dataset.noised_img_path_cl3, cfg.dataset.gt_img_path_cl3, cfg.dataset.img_org_path_all, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
             patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
         #noiseDataTrain_cl5 = CustomDataSet(cfg.dataset.noised_img_path_cl5, cfg.dataset.gt_img_path_cl5, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
         #    patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
@@ -44,19 +44,19 @@ def get_dataset(cfg):
         #    patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
         
             
-        noiseDataValid_pr5 = CustomDataSet(cfg.dataset.noised_img_path_val_pr5, cfg.dataset.gt_img_path_val_pr5, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
+        noiseDataValid_pr5 = CustomDataSet(cfg.dataset.noised_img_path_val_pr5, cfg.dataset.gt_img_path_val_pr5, cfg.dataset.img_org_path_val_all, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
             repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
-        noiseDataValid_pr1 = CustomDataSet(cfg.dataset.noised_img_path_val_pr1, cfg.dataset.gt_img_path_val_pr1, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
+        noiseDataValid_pr1 = CustomDataSet(cfg.dataset.noised_img_path_val_pr1, cfg.dataset.gt_img_path_val_pr1, cfg.dataset.img_org_path_val_all, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
             repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
-        noiseDataValid_pr0_5 = CustomDataSet(cfg.dataset.noised_img_path_val_pr0_5, cfg.dataset.gt_img_path_val_pr0_5, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
+        noiseDataValid_pr0_5 = CustomDataSet(cfg.dataset.noised_img_path_val_pr0_5, cfg.dataset.gt_img_path_val_pr0_5, cfg.dataset.img_org_path_val_all, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
             repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
-        noiseDataValid_col1 = CustomDataSet(cfg.dataset.noised_img_path_val_col1, cfg.dataset.gt_img_path_val_col1, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
+        noiseDataValid_col1 = CustomDataSet(cfg.dataset.noised_img_path_val_col1, cfg.dataset.gt_img_path_val_col1, cfg.dataset.img_org_path_val_all, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
             repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
-        noiseDataValid_col2 = CustomDataSet(cfg.dataset.noised_img_path_val_col2, cfg.dataset.gt_img_path_val_col2, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
+        noiseDataValid_col2 = CustomDataSet(cfg.dataset.noised_img_path_val_col2, cfg.dataset.gt_img_path_val_col2, cfg.dataset.img_org_path_val_all, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
             repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
-        noiseDataValid_cl2 = CustomDataSet(cfg.dataset.noised_img_path_val_cl2, cfg.dataset.gt_img_path_val_cl2, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
+        noiseDataValid_cl2 = CustomDataSet(cfg.dataset.noised_img_path_val_cl2, cfg.dataset.gt_img_path_val_cl2, cfg.dataset.img_org_path_val_all, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
             repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
-        noiseDataValid_cl3 = CustomDataSet(cfg.dataset.noised_img_path_val_cl3, cfg.dataset.gt_img_path_val_cl3, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
+        noiseDataValid_cl3 = CustomDataSet(cfg.dataset.noised_img_path_val_cl3, cfg.dataset.gt_img_path_val_cl3, cfg.dataset.img_org_path_val_all, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
             repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
         #noiseDataValid_cl5 = CustomDataSet(cfg.dataset.noised_img_path_val_cl5, cfg.dataset.gt_img_path_val_cl5, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
         #    repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
@@ -75,13 +75,13 @@ def get_dataset(cfg):
         # u100  = Benchmark(cfg.dataset.u100_hr_path, cfg.dataset.u100_lr_path, scale=cfg.train_config.scale, colors=cfg.train_config.colors, store_in_ram=cfg.train_config.store_in_ram)
         
         #train_dataloader = DataLoader(dataset=noiseDataTrain_pr5, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)
-        train_dataloader += [{'name': 'pr5', 'dataloader': DataLoader(dataset=noiseDataTrain_pr5, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
-        train_dataloader += [{'name': 'pr1', 'dataloader': DataLoader(dataset=noiseDataTrain_pr1, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
-        train_dataloader += [{'name': 'pr0_5', 'dataloader': DataLoader(dataset=noiseDataTrain_pr0_5, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
-        train_dataloader += [{'name': 'col1', 'dataloader': DataLoader(dataset=noiseDataTrain_col1, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
-        train_dataloader += [{'name': 'col2', 'dataloader': DataLoader(dataset=noiseDataTrain_col2, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
-        train_dataloader += [{'name': 'cl2', 'dataloader': DataLoader(dataset=noiseDataTrain_cl2, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
-        train_dataloader += [{'name': 'cl3', 'dataloader': DataLoader(dataset=noiseDataTrain_cl3, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
+        train_dataloaders += [{'name': 'pr5', 'dataloader': DataLoader(dataset=noiseDataTrain_pr5, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
+        train_dataloaders += [{'name': 'pr1', 'dataloader': DataLoader(dataset=noiseDataTrain_pr1, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
+        train_dataloaders += [{'name': 'pr0_5', 'dataloader': DataLoader(dataset=noiseDataTrain_pr0_5, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
+        train_dataloaders += [{'name': 'col1', 'dataloader': DataLoader(dataset=noiseDataTrain_col1, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
+        train_dataloaders += [{'name': 'col2', 'dataloader': DataLoader(dataset=noiseDataTrain_col2, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
+        train_dataloaders += [{'name': 'cl2', 'dataloader': DataLoader(dataset=noiseDataTrain_cl2, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
+        train_dataloaders += [{'name': 'cl3', 'dataloader': DataLoader(dataset=noiseDataTrain_cl3, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
         #train_dataloader += [{'name': 'cl5', 'dataloader': DataLoader(dataset=noiseDataTrain_cl5, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
         #train_dataloader += [{'name': 'row1', 'dataloader': DataLoader(dataset=noiseDataTrain_row1, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
         #train_dataloader += [{'name': 'row2', 'dataloader': DataLoader(dataset=noiseDataTrain_row2, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]

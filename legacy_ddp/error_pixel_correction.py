@@ -20,7 +20,7 @@ parser.add_argument('--src_noise', default='/dataset/Cityscapes/DEFECTION_NOISE_
 
 parser.add_argument('--tar', default='./result_d2/', type=str, help='Directory of Recoverd images')
 parser.add_argument('--num_cores', default=10, type=int, help='Number of CPU Cores')
-parser.add_argument('--recovery_type', default='DPD_M', type=str, help='recovery type: DPD_D, DPD_M')
+parser.add_argument('--recovery_type', default='DPD_D', type=str, help='recovery type: DPD_D, DPD_M')
 
 args = parser.parse_args()
 REC_TYPE = args.recovery_type 
