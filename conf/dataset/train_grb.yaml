@@ -1,5 +1,6 @@
 ## data specification
 ### Train dataset.
+img_org_path_all: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_train/'
 
 noised_img_path_pr1: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/pr_1_0/'
 gt_img_path_pr1: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/pr_1_0/index/'
@@ -30,6 +31,8 @@ gt_img_path_pr5: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_trai
 
 
 ### Val dataset.
+img_org_path_val_all: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_val/'
+
 noised_img_path_val_pr1: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/pr_1_0/'
 gt_img_path_val_pr1: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/pr_1_0/index/'
 

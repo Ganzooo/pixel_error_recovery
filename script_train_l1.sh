@@ -1,0 +1,1 @@
+python train_server.py losses.name=l1 train_config.description=l1_losses train_config.epochs=300 train_config.gpu_id=0
