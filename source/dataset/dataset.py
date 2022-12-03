@@ -19,7 +19,7 @@ def get_dataset(cfg):
     train_dataloaders = []
     valid_dataloaders = []
     
-    erro_split_db = 1
+    erro_split_db = 0
     if erro_split_db:
         noiseDataTrain_pr5 = CustomDataSet(cfg.dataset.noised_img_path_pr5, cfg.dataset.gt_img_path_pr5, cfg.dataset.img_org_path_all, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
             patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)
