@@ -190,19 +190,22 @@ class UNetWithResnet50Hybrid(nn.Module):
             pre_pools[f"layer_{i}"] = x
 
         x_bridge = self.bridge(x)
+        
+        x_det = x_bridge
+        x_rec = x_bridge
 
         ### Detection
         for i, block in enumerate(self.up_blocks, 1):
             key = f"layer_{UNetWithResnet50Hybrid.DEPTH - 1 - i}"
-            x_det = block(x_bridge, pre_pools[key])
+            x_det = block(x_det, pre_pools[key])
         output_feature_map = x_det
         x_det = self.out(x_det)
-        del pre_pools
+        #del pre_pools
         
         ### Recovery
         for i, block in enumerate(self.up_blocks_recovery, 1):
             key = f"layer_{UNetWithResnet50Hybrid.DEPTH - 1 - i}"
-            x_rec = block(x_bridge, pre_pools[key])
+            x_rec = block(x_rec, pre_pools[key])
         #output_feature_map = x
         x_rec = self.out_recovery(x_rec)
         del pre_pools
@@ -217,9 +220,8 @@ class UNetWithResnet50Hybrid(nn.Module):
 # out = model(inp)
 # print(out)
 
-# model = UNetWithResnet50Hybrid(in_channel = 1, n_classes=2, pretrained=True).cuda()
-# inp = torch.rand((10, 1, 512, 512)).cuda()
-# out = model(inp)
-# print(out)
-
-
+if __name__ == "__main__":
+    model = UNetWithResnet50Hybrid(in_channel = 3, n_classes=2, pretrained=True).cuda()
+    inp = torch.rand((10, 3, 512, 512)).cuda()
+    out, out_rec = model(inp)
+    print(out, out_rec)

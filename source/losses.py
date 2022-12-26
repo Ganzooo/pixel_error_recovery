@@ -90,6 +90,24 @@ class bootstrapped_cross_entropy2d(torch.nn.modules.loss._Loss):
                 size_average=self.size_average,
             )
         return loss / float(batch_size)
+
+class bootstrapped_cross_entropy2d_l1_hybrid(torch.nn.modules.loss._Loss):
+    def __init__(self, size_average=True, reduce=False, reduction='mean', ignore_index=250):
+        super(bootstrapped_cross_entropy2d_l1_hybrid, self).__init__(size_average, reduce, reduction)
+        self.detection = bootstrapped_cross_entropy2d()
+        self.recovery = torch.nn.L1Loss()
+        self.w1 = 0.5
+        self.w2 = 0.5
+        
+    def forward(self, input, target, input_rec, target_rec):
+        n, c, h, w = input.size()
+        nt, ht, wt = target.size()
+        batch_size = input.size()[0]
+
+        loss1 = self.detection(input, target)
+        loss2 = self.recovery(input_rec, target_rec)
+        loss = self.w1 * loss1 + self.w2 * loss2
+        return loss
     
 def get_criterion(cfg):
     if cfg.losses.name == 'l1':
@@ -104,6 +122,8 @@ def get_criterion(cfg):
         return bootstrapped_cross_entropy2d()
     elif cfg.losses.name == 'DICE':
         return smp.losses.DiceLoss(mode='multiclass', ignore_index=cfg.train_config.ignore_index)
+    elif cfg.losses.name == 'bootstrapped_cross_entropy2d_hybrid_l1':
+        return bootstrapped_cross_entropy2d_l1_hybrid()
     else: 
         raise NameError('Choose proper model name!!!')
 
@@ -111,5 +131,7 @@ if __name__ == "__main__":
     true = np.array([1.0, 1.2, 1.1, 1.4, 1.5, 1.8, 1.9])
     pred = np.array([1.0, 1.2, 1.1, 1.4, 1.5, 1.8, 1.9])
     
-    #loss = criterion(pred, true)
-    #print(loss)
+    
+    
+    loss = get_criterion(pred, true)
+    print(loss)

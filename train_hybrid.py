@@ -24,7 +24,6 @@ import hydra
 from omegaconf import DictConfig
 from sklearn.metrics import accuracy_score
 from skimage.metrics import peak_signal_noise_ratio as psnr_calc
-from skimage.metrics import structural_similarity as ssim_calc
 
 # For colored terminal text
 from colorama import Fore, Back, Style
@@ -36,7 +35,6 @@ warnings.filterwarnings("ignore")
 
 #Wandb and mlflow
 import wandb
-import cv2 
 
 try:
     wandb.login(key='0b0a03cb580e75ef44b4dff7f6f16ce9cfa8a290')
@@ -63,8 +61,8 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
         pbar = tqdm(enumerate(dataloader), total=len(dataloader), desc='Train {}:'.format(name))
         for step, (data) in pbar:
 
-            _image_patch, _gt_patch, _idx = data
-            _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
+            _image_patch, _gt_patch, _idx, _fname, _org_img = data
+            _image_patch, _gt_patch, _org_img = _image_patch.to(device), _gt_patch.to(device), _org_img.to(device)
                 
             batch_size = _image_patch.size(0)
             
@@ -89,8 +87,8 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 # Updates the scale for next iteration.
                 scaler.update()
             else: 
-                _pred = model(_image_patch)
-                loss = criterion(_pred, _gt_patch)
+                _pred, _rec = model(_image_patch)
+                loss = criterion(_pred, _gt_patch, _rec, _org_img)
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
@@ -122,7 +120,6 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 else: 
                     _img = img[0].transpose(1,2,0)*255
                 
-                
                 _pred = pred[0]
                 _pred = np.expand_dims(_pred,axis=0)
                 _pred = np.concatenate((_pred,_pred,_pred), axis=0).transpose(1,2,0)
@@ -139,8 +136,6 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 
                 temp0 = np.concatenate((_gt, _img, _pred),axis=1)
                 save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'),temp0.astype(np.uint8), color_domain='rgb')
-                
-            #if cfg.train_config.debug and step < 10:
     
     if cfg.train_config.wandb:
         # Log the metrics
@@ -161,9 +156,6 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
     
     acc_all = []
     psnr_all = []
-    ssim_all = []
-    start_t = time.perf_counter() 
-    
     for _dl in dataloader:
         name = _dl['name']
         dataloader = _dl['dataloader']
@@ -174,16 +166,15 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
         
         acc_db = []
         psnr_db = []
-        ssim_db = []
-        dirPath = "/mnt/data_main/NETWORK/11_IMAGE_DENOISE/pixel_error_recovery/result_image/val/{}/".format(name)
-               
+        dirPath = "./result_image/val/{}/".format(name)
+                 
         for _image_patch, _gt_patch, _idx, _fname, _imageOrg_patch in pbar:
             
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
             
             _start_pixel_err = time.time()
             
-            _pred = model(_image_patch)
+            _pred, _recBatch = model(_image_patch)
             
             _end_pixel_err = time.time()
             
@@ -191,8 +182,11 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             
             _imgPred = []
             _imgRec = []
+
             if cfg.train_config.pixel_recovery:
                 filter_size = cfg.train_config.fsize
+                #pred = np.squeeze(_pred.data.max(1)[1].cpu().numpy(), axis=0)
+                #gt = np.squeeze(_gt_patch.data.cpu().numpy(), axis=0)
 
                 ### Pred data
                 for b in range(_pred.shape[0]):
@@ -205,45 +199,24 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                     acc_rec = accuracy_score(gt.cpu(), pred.cpu())
                     #acc_rec = np.round(float(total_erro_pixel_Pred/total_erro_pixel_GT),2)
                     acc_db.append(acc_rec)
-                    
-                    ### --- 
-                    ### --- 
-                    # Image Reconstruct with predicted ERROR
-                    img = _image_patch[b].data.cpu().numpy().transpose(1,2,0)
-                    _start_pixel_rec = time.time()
-                    nH, nW = img.shape[0], img.shape[1]
-                    _imgPred = np.full((nH+(filter_size*2), nW+(filter_size*2), 3), (128,128,128))
-                    _imgPred[filter_size:nH+filter_size,filter_size:nW+filter_size,:] = img*255
-                    
-                    for _id0, _id1 in zip(index[0].data.cpu().numpy(), index[1].data.cpu().numpy()):
-                        _id0 += filter_size
-                        _id1 += filter_size
-                        crop_neighbor = np.array(_imgPred[_id0-filter_size:_id0+filter_size,_id1-filter_size:_id1+filter_size,:])
-                        _imgPred[_id0,_id1,:] = (median(np.sort(crop_neighbor[:,:,0].ravel())),median(np.sort(crop_neighbor[:,:,1].ravel())),median(np.sort(crop_neighbor[:,:,2].ravel())))
-                    _imgRec = _imgPred[filter_size:nH+filter_size,filter_size:nW+filter_size,:].astype(np.uint8)
-                    
-                    _imgOrg = _imageOrg_patch[b].numpy()
-                    psnr = psnr_calc(_imgOrg,_imgRec)
-                    
-                    if _imgOrg.shape[2] == 3:
-                        ssim_R = ssim_calc(_imgOrg[:,:,0],_imgRec[:,:,0], full=True)
-                        ssim_G = ssim_calc(_imgOrg[:,:,1],_imgRec[:,:,1], full=True)
-                        ssim_B = ssim_calc(_imgOrg[:,:,2],_imgRec[:,:,2], full=True)
-                        ssim = mean([ssim_R[0], ssim_G[0], ssim_B[0]])
-                    ssim_db.append(ssim)
-                    psnr_db.append(psnr)
-                    
-                    _end_pixel_rec = time.time()
 
-                    fname = os.path.basename(_fname[b])
-                    with open(os.path.join(dirPath,"result.csv"), "a") as file:
-                        file.write("{},{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname), str(acc_rec),str(psnr), str(ssim),(_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
-                            
+                    _rec = _recBatch[b].cpu() * 255
+                    _rec = _rec.permute(1,2,0).long()
+                    _imgOrg = _imageOrg_patch[b]
+                    psnr = psnr_calc(_imgOrg.numpy(),_rec.numpy().astype(np.uint8))
+                    psnr_db.append(psnr)
+
+                    _end_pixel_rec = time.time()
+                
                     if cfg.train_config.save_img_rec:
                         #fname = str(name) + '_munster_' + str(int(_idx[b])).zfill(6) + '_000019_leftImg8bit_recover.png'
-                        save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), _imgRec.astype(np.uint8), color_domain='rgb')
+                        fname = os.path.basename(_fname[b])
+                        save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), _rec.numpy().astype(np.uint8), color_domain='rgb')
                     
-            if cfg.train_config.img_save_val:  
+                        #with open(os.path.join(dirPath,"result.csv"), "a") as file:
+                        #    file.write("{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname), str(acc_rec),str(psnr), (_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
+            
+            if cfg.train_config.img_save_val and count < 81:  
                 pred = _pred.data.max(1)[1].cpu().numpy()
                 gt = _gt_patch.data.cpu().numpy()
                 img = _image_patch.data.cpu().numpy()
@@ -275,35 +248,27 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 _gt[_gt == 1] = 255
                 
                 ### Save images
-                temp0 = np.concatenate((_img/255., _pred, _imgRec/255.),axis=1)
-                #save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'), temp0.astype(np.uint8), color_domain='rgb')
+                temp0 = np.concatenate((_gt, _img, _pred, _imgRec),axis=1)
+                save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'), temp0.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_gt.jpg'), _gt.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_img.jpg'), _img.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_pred.jpg'), _pred.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_img_pred.jpg'), _imgPred.astype(np.uint8), color_domain='rgb')
                 
-                cv2.namedWindow("Input Image & Predicted Error & Reconstructed Image",0);
-                cv2.resizeWindow("Input Image & Predicted Error & Reconstructed Image", 1920, 720);
-                cv2.imshow("Input Image & Predicted Error & Reconstructed Image", temp0[:,:,::-1])
-                cv2.waitKey(0)
-                
-            pbar.set_postfix(epoch=f'{epoch}', acc=f'{acc_rec:0.4f}', psnr=f'{psnr:0.2f}', ssim=f'{ssim:0.2f}')
-        cv2.destroyAllWindows()
+            pbar.set_postfix(epoch=f'{epoch}', acc=f'{acc_rec:0.4f}', psnr=f'{psnr:0.2f}')
+        
         score, class_iou = running_metrics_val.get_scores()
         _score=[]
         
         for k, v in score.items():
            _score.append(v)
-        
+           
         print('Accuracy mean({}) = {}'.format(name, mean(acc_db)))
         acc_all.append(mean(acc_db))
         
         if cfg.train_config.pixel_recovery:
             print('PSNR mean({}) = {}'.format(name, mean(psnr_db)))    
             psnr_all.append(mean(psnr_db))
-            
-            print('SSIM mean({}) = {}'.format(name, mean(ssim_db)))    
-            ssim_all.append(mean(ssim_db))
             
         running_metrics_val.reset()    
         
@@ -314,7 +279,6 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                     "val/Valid Loss ({})".format(name): val_loss_meter.avg,
                     "val/Valid ACC {} - ".format(name): mean(acc_db),
                     "val/Valid PSNR {} - ".format(name): mean(psnr_db),
-                    "val/Valid SSIM {} - ".format(name): mean(ssim_db),
                     })
             else: 
                 # Log the metrics
@@ -322,39 +286,105 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                     "val/Valid Loss ({})".format(name): val_loss_meter.avg,
                     "val/Valid ACC {} - ".format(name): mean(acc_db),
                     })
-    end_t = time.perf_counter()
-    print("ALL Accuracy:::", mean(acc_all)) 
     
-    #print("FPS:{:.2f}".format(60/(end_t-start_t)))
+    print("ALL Accuracy:::", mean(acc_all)) 
     return mean(acc_all)
 
-def run_validate(cfg, model, optimizer, scheduler, criterion, device, num_epochs, train_loader, valid_loader, model_path):
+def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs, train_loader, valid_loader, run_log_wandb):
+    # To automatically log gradients
+    #wandb.watch(model, log_freq=100)
     
     start = time.time()
     best_miou      = -np.inf
     best_epoch     = -1
+    
+    if cfg.train_config.pretrain is not None:
+        print("load pretrained model: {}!".format(cfg.train_config.pretrain))
+        model.load_state_dict(torch.load(cfg.train_config.pretrain))
+    else:
+        print("train the model from scratch!")
 
-    print("load test model: {}!".format(model_path))
-    model.load_state_dict(torch.load(model_path))
+    print("Check whether the pretrained model is restored...")
+    if cfg.train_config.resume:
+        # Load checkpoint model
+        checkpoint = torch.load(cfg.train_config.resume, map_location=lambda storage, loc: storage)
+        # Restore the parameters in the training node to this point
+        cfg.train_config.start_epoch = checkpoint["epoch"]
+        best_psnr = checkpoint["best_psnr"]
+        # Load checkpoint state dict. Extract the fitted model weights
+        model_state_dict = model.state_dict()
+        new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if k in model_state_dict}
+        # Overwrite the pretrained model weights to the current model
+        model_state_dict.update(new_state_dict)
+        model.load_state_dict(model_state_dict)
+        # Load the optimizer model
+        optimizer.load_state_dict(checkpoint["optimizer"])
+        # Load the scheduler model
+        # scheduler.load_state_dict(checkpoint["scheduler"])
+        print("Loaded pretrained model weights.")
     
     log_name = os.path.join("log.txt")
     sys.stdout = utils_sr.ExperimentLogger(log_name, sys.stdout)
     stat_dict = utils_sr.get_stat_dict()
-    
-    cfg.train_config.wandb = 0
-    valid_one_epoch(cfg, model, valid_loader, criterion,
-                                    device=device,
-                                    epoch=0, stat_dict=stat_dict, run_log_wandb=None)
-    
+        
+    for epoch in range(cfg.train_config.start_epoch, num_epochs + 1):
+        acc = 0
+        print(f'Epoch {epoch}/{num_epochs}', end='')
+        
+        train_one_epoch(cfg, model, optimizer, scheduler, criterion=criterion,
+                                      dataloader=train_loader,
+                                      device=device, epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
+        
+        if (epoch % cfg.train_config.test_every) == 0:
+            acc = valid_one_epoch(cfg, model, valid_loader, criterion,
+                                        device=device,
+                                        epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
+        
+        #epoch_PSNR = val_div2k_psnr
+        if acc > best_miou:
+            print("{} Valid ACC Improved at {} -> (Before: {} ---> Best: {})".format(c_, 'all', best_miou, acc))
+            #print("\t{}Valid SSIM Improved at {} -> ({}), Epoch: {}/{}".format(c_,'Div2k',stat_dict['Div2k']['best_ssim']['value'], epoch, num_epochs))
+            sys.stdout.flush()
+            
+            best_miou = acc
+            best_epoch        = epoch
+            if cfg.train_config.wandb:
+                wandb.summary["Best Acc"]    = acc
+                wandb.summary["Best Epoch"]   = best_epoch
+
+            # save stat dict
+            ## save training paramters
+            # stat_dict_name = os.path.join('./', 'stat_dict.yml')
+            # with open(stat_dict_name, 'w') as stat_dict_file:
+            #     yaml.dump(stat_dict, stat_dict_file, default_flow_style=False)
+        
+            dirPath = "./run/{}".format(cfg.train_config.comment)
+            PATH = f"best_epoch.pt"
+            torch.save(model.state_dict(), os.path.join(dirPath,PATH))
+            # Save a model file from the current directory
+            if cfg.train_config.wandb:
+                wandb.save(PATH)
+            print(f"Model Saved{sr_}")
+
+        #last_model_wts = copy.deepcopy(model.state_dict())
+        PATH = f"last_epoch.pt"
+        torch.save(model.state_dict(), PATH)
+        #print(); print()
+        
+        torch.cuda.empty_cache()
+        gc.collect()
+
     end = time.time()
     time_elapsed = end - start
-    #print('Validation complete in {:.0f}h {:.0f}m {:.0f}s'.format(
-    #    time_elapsed // 3600, (time_elapsed % 3600) // 60, (time_elapsed % 3600) % 60))
-    #print("Best mIoU Score: {:.4f}".format(best_miou))
+    print('Training complete in {:.0f}h {:.0f}m {:.0f}s'.format(
+        time_elapsed // 3600, (time_elapsed % 3600) // 60, (time_elapsed % 3600) % 60))
+    print("Best ACC Score: {:.4f}".format(best_miou))
     return model
-        
-@hydra.main(config_path="conf", config_name="config")
-def validate(cfg : DictConfig) -> None:
+
+@hydra.main(config_path="conf", config_name="config_hybrid")
+def train(cfg : DictConfig) -> None:
+    set_seed()
+    
     device = None
     if cfg.train_config.gpu_id >= 0 and torch.cuda.is_available():
         print("use cuda & cudnn for acceleration!")
@@ -364,23 +394,46 @@ def validate(cfg : DictConfig) -> None:
     else:
         print("use cpu for training!")
         device = torch.device('cpu')
-
-    dirPath = "./run/validate/{}".format(cfg.train_config.comment)
+    #torch.set_num_threads(cfg.train_config.threads)
+    
+    ### For use original path.
+    ### For debug...
+    #currPath = os.getcwd()
+    #os.chdir(currPath)
+    #print(currPath)
+    # org_cwd = hydra.utils.get_original_cwd()
+    # print(org_cwd)
+    
+    dirPath = "./run/{}".format(cfg.train_config.comment)
     if not os.path.isdir(dirPath): 
         os.makedirs(dirPath)
     
     model = get_model(cfg, device)
-    _, valid_loader  = get_dataset(cfg)
+    train_loader, valid_loader  = get_dataset(cfg)
     optimizer = get_optimizer(cfg, model)
+    
     scheduler = get_scheduler(cfg, optimizer)
     criterion = get_criterion(cfg)
     print(cfg.train_config.comment)
     
-    model = run_validate(cfg, model, optimizer, scheduler, criterion=criterion,
+    if cfg.train_config.wandb:
+        run_log_wandb = wandb.init(entity="gnzrg25", project='Noise pixel detection',
+                    config={k:v for k, v in dict(cfg).items() if '__' not in k},
+                    anonymous=anonymous,
+                    name=f"dim-{cfg.train_config.patch_size}x{cfg.train_config.patch_size}|model-{cfg.model.name}",
+                    group=cfg.train_config.comment,
+                    )
+    else: 
+        run_log_wandb = 0
+    
+    model = run_training(cfg, model, optimizer, scheduler, criterion=criterion,
                                 device=device,
                                 num_epochs=cfg.train_config.epochs,
-                                train_loader=None,
-                                valid_loader=valid_loader, 
-                                model_path= cfg.train_config.testmodelpath)
+                                train_loader=train_loader,
+                                valid_loader=valid_loader,
+                                run_log_wandb=run_log_wandb)
+    if cfg.train_config.wandb:
+        run_log_wandb.finish()
+        
 if __name__ == '__main__':
-    validate()
+    train()

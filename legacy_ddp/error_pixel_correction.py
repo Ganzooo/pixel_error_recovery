@@ -18,8 +18,8 @@ parser = argparse.ArgumentParser(description='Defected NOISE Recovery Algorithm'
 parser.add_argument('--src_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_val/',type=str, help='Directory for image patches')
 parser.add_argument('--src_noise', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/',type=str, help='Directory for image patches')
 
-parser.add_argument('--tar', default='./result_d2/', type=str, help='Directory of Recoverd images')
-parser.add_argument('--num_cores', default=10, type=int, help='Number of CPU Cores')
+parser.add_argument('--tar', default='./result_gray/', type=str, help='Directory of Recoverd images')
+parser.add_argument('--num_cores', default=1, type=int, help='Number of CPU Cores')
 parser.add_argument('--recovery_type', default='DPD_D', type=str, help='recovery type: DPD_D, DPD_M')
 
 args = parser.parse_args()
@@ -189,6 +189,57 @@ def DPD_M_detect(crop_img, y, x, N):
             status = 'good'
     return status, P0_rec
 
+def recover_defected_pixel_rgb__gray_scale(idx, dir):
+    #print(":::Recovery PART 2:::")
+    #cv2.imwrite('./original_image.png', img)
+    fname = dir[idx]
+    filename = os.path.split(fname)[-1]
+    #print(filename)
+    imgRGB = cv2.imread(fname)
+    
+    imgGray = cv2.cvtColor(imgRGB, cv2.COLOR_BGR2GRAY)
+    
+
+    recFname = os.path.join(args.tar, os.path.split(os.path.split(fname)[0])[-1], filename)
+    recFnameIdx = os.path.join(args.tar, os.path.split(os.path.split(fname)[0])[-1],'index', filename)
+        
+    nH = imgGray.shape[0]
+    nW = imgGray.shape[1]
+    
+    image_copy = np.zeros((nH+(int(N/2)*2),nW+(int(N/2)*2)))
+    image_copy.fill(128)
+    
+    _nStep = int(N / 2)
+    image_copy[_nStep:_nStep+nH, _nStep:_nStep+nW] = imgGray[0:nH, 0:nW]
+    pixel_error_idx = np.zeros((nH+(int(N/2)*2),nW+(int(N/2)*2)), dtype=np.uint8)
+    
+    
+    for i in range(_nStep, nH+_nStep, 1):
+        for j in range(_nStep, nW+_nStep, 1):
+                crop_img = np.zeros((N, N))
+                crop_img = image_copy[i-_nStep:(i-_nStep)+N, j-_nStep:(j-_nStep)+N]
+
+                if REC_TYPE == "DPD_D":
+                    _status, P_rec = DPD_D_detect(crop_img, i, j, N)
+                else: 
+                    _status, P_rec = DPD_M_detect(crop_img, i, j, N)
+
+                if _status == 'good':
+                    pass
+                else: 
+                    #print('Image recovered y={},x={}, org_val={}, rec_val={}'.format(y,x,image_copy[y,x],P_rec))
+                    pixel_error_idx[i,j] = 255
+                    image_copy[i, j] = P_rec
+
+    imgRGB_rec = cv2.merge([image_copy[_nStep:_nStep+nH, _nStep:_nStep+nW],image_copy[_nStep:_nStep+nH, _nStep:_nStep+nW],image_copy[_nStep:_nStep+nH, _nStep:_nStep+nW]])
+    #recRGB.append(image_copy[_nStep:_nStep+nH, _nStep:_nStep+nW])
+    #recIdx.append(pixel_error_idx[_nStep:_nStep+nH, _nStep:_nStep+nW])
+
+    #recRGB = np.array(recRGB).transpose(1,2,0)
+    #recIdx = np.array(recIdx).transpose(1,2,0)
+    cv2.imwrite(recFname, imgRGB_rec)
+    cv2.imwrite(recFnameIdx, pixel_error_idx)
+
 def recover_defected_pixel_rgb_scale(idx, dir):
     #print(":::Recovery PART 2:::")
     #cv2.imwrite('./original_image.png', img)
@@ -300,7 +351,7 @@ def recover_defected_pixel_gray_scale(idx, dir):
     cv2.imwrite(recFnameIdx, pixel_error_idx[_nStep:_nStep+nH, _nStep:_nStep+nW])
     
 if __name__ == '__main__':
-    gray_scale = 0
+    gray_scale = 1
     
     for _noiseDir in tqdm(noiseDir, desc="Noise type"):
         #get sorted folders
@@ -308,7 +359,8 @@ if __name__ == '__main__':
         print('\n\n Noise Type: {}'.format(os.path.split(_noiseDir)[-1]))
         
         if gray_scale:        
-            Parallel(n_jobs=args.num_cores)(delayed(recover_defected_pixel_gray_scale)(idx=fname, dir=imgDir) for fname in tqdm(range(0,len(imgDir)), desc="    Images"))
+            #Parallel(n_jobs=args.num_cores)(delayed(recover_defected_pixel_gray_scale)(idx=fname, dir=imgDir) for fname in tqdm(range(0,len(imgDir)), desc="    Images"))
+            Parallel(n_jobs=args.num_cores)(delayed(recover_defected_pixel_rgb__gray_scale)(idx=fname, dir=imgDir) for fname in tqdm(range(0,len(imgDir)), desc="    Images"))
             
             # for file_ in imgDir:
             #     filename = os.path.split(file_)[-1]

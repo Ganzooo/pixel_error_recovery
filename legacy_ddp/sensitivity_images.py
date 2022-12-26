@@ -15,7 +15,7 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score
 
-parser = argparse.ArgumentParser(description='Defected NOISE Recovery Algorithm')
+parser = argparse.ArgumentParser(description='Defected NOISE Rec overy Algorithm')
 parser.add_argument('--src_gt', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_val/',type=str, help='Directory for image patches')
 parser.add_argument('--src_noise', default='/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/',type=str, help='Directory for image patches')
 parser.add_argument('--tar', default='./result_d2/', type=str, help='Directory of Recoverd images')
@@ -24,15 +24,15 @@ parser.add_argument('--num_cores', default=1, type=int, help='Number of CPU Core
 parser.add_argument('--recovery_type', default='DPD_D', type=str, help='recovery type: DPD_D, DPD_M')
 
 args = parser.parse_args()
-REC_TYPE = args.recovery_type 
-args.tar = args.tar + REC_TYPE 
+REC_TYPE = args.recovery_type
+args.tar = args.tar + REC_TYPE
 
 noiseDir = []
 noiseDir.append(os.path.join(args.src_noise, 'pr_5_0', 'index'))
 noiseDir.append(os.path.join(args.src_noise, 'pr_0_5', 'index'))
 noiseDir.append(os.path.join(args.src_noise, 'pr_1_0', 'index'))
-noiseDir.append(os.path.join(args.src_noise, 'col_1', 'index')) 
-noiseDir.append(os.path.join(args.src_noise, 'col_2', 'index')) 
+noiseDir.append(os.path.join(args.src_noise, 'col_1', 'index'))
+noiseDir.append(os.path.join(args.src_noise, 'col_2', 'index'))
 noiseDir.append(os.path.join(args.src_noise, 'cluster_2', 'index'))
 noiseDir.append(os.path.join(args.src_noise, 'cluster_3', 'index'))
 
@@ -42,8 +42,8 @@ tarDir = []
 tarDir.append(os.path.join(args.tar, 'pr_5_0', 'index'))
 tarDir.append(os.path.join(args.tar, 'pr_0_5', 'index'))
 tarDir.append(os.path.join(args.tar, 'pr_1_0', 'index'))
-tarDir.append(os.path.join(args.tar, 'col_1', 'index')) 
-tarDir.append(os.path.join(args.tar, 'col_2', 'index')) 
+tarDir.append(os.path.join(args.tar, 'col_1', 'index'))
+tarDir.append(os.path.join(args.tar, 'col_2', 'index'))
 tarDir.append(os.path.join(args.tar, 'cluster_2', 'index'))
 tarDir.append(os.path.join(args.tar, 'cluster_3', 'index'))
 
@@ -51,8 +51,8 @@ resultCSV = []
 resultCSV.append(os.path.join(args.tar, 'sensitivity_pr_5_0.csv'))
 resultCSV.append(os.path.join(args.tar, 'sensitivity_pr_0_5.csv'))
 resultCSV.append(os.path.join(args.tar, 'sensitivity_pr_1_0.csv'))
-resultCSV.append(os.path.join(args.tar, 'sensitivity_col_1.csv')) 
-resultCSV.append(os.path.join(args.tar, 'sensitivity_col_2.csv')) 
+resultCSV.append(os.path.join(args.tar, 'sensitivity_col_1.csv'))
+resultCSV.append(os.path.join(args.tar, 'sensitivity_col_2.csv'))
 resultCSV.append(os.path.join(args.tar, 'sensitivity_cluster_2.csv'))
 resultCSV.append(os.path.join(args.tar, 'sensitivity_cluster_3.csv'))
 
@@ -76,14 +76,13 @@ def errorSensitivity(idx, filePath2_noise, filePath3_rec, csvPath):
     #print(idx)
     #noiseImg= np.fromfile(filePath2_noise[idx], dtype=int)
     #recImg = np.fromfile(filePath3_rec[idx], dtype=int)
-    
+
     #print(filePath2_noise[idx])
     #print(filePath3_rec[idx])
-    
-    
+
     noiseData = cv2.imread(filePath2_noise[idx], cv2.IMREAD_GRAYSCALE)
     _noiseData = noiseData.flatten()
-    
+
     recDataOrg = cv2.imread(filePath3_rec[idx])
     if recDataOrg.shape[2] == 3:
         recData = cv2.cvtColor(recDataOrg, cv2.COLOR_BGR2GRAY)
@@ -91,7 +90,7 @@ def errorSensitivity(idx, filePath2_noise, filePath3_rec, csvPath):
     else: 
         recData = cv2.cvtColor(recDataOrg, cv2.COLOR_BGR2GRAY)
     _recData = recData.flatten()
-    
+
     acc = accuracy_score(noiseData, recData)
     tn, fp, fn, tp, _SENSIBILITY, _SPECIFICITY, _PPV, _NPV = 0, 0, 0, 0, 0, 0, 0, 0
     #tn, fp, fn, tp = confusion_matrix(noiseData, recData, labels=[0,1]).ravel()
@@ -100,19 +99,19 @@ def errorSensitivity(idx, filePath2_noise, filePath3_rec, csvPath):
     # _PPV = np.float(tp / (tp + fp))
     # _NPV = np.float(tn / (tn + fn))
     
-    # print('TN:',tn)
-    # print('FP:',fp)
-    # print('FN:',fn)
-    # print('TP:',tp)
+    # print('TN:', tn)
+    # print('FP:', fp)
+    # print('FN:', fn)
+    # print('TP:', tp)
     # _psnr_gt = calc_psnr(gtImg, noiseImg)
     # _psnr_rec = calc_psnr(gtImg, recImg)
     
     fname = os.path.split(filePath2_noise[idx])[1]
-    #result = "name:{},noise:{},rec:{},".format(fname[:-4], _psnr_gt, _psnr_rec)
+    # result = "name:{},noise:{},rec:{},".format(fname[:-4], _psnr_gt, _psnr_rec)
     with open(csvPath, 'a', newline='') as csvfile: 
         writer = csv.writer(csvfile)
         writer.writerow([fname[:-4], tn, fp, fn, tp, _SENSIBILITY, _SPECIFICITY, _PPV, _NPV, acc])
-    
+
 if __name__=='__main__':
     for _csv in resultCSV:
         if os.path.exists(_csv):

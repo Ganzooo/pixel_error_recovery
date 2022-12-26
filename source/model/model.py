@@ -1,5 +1,5 @@
 import torch
-from .resnet50_unet import UNetWithResnet50Encoder
+from .resnet50_unet import UNetWithResnet50Encoder, UNetWithResnet50Hybrid
 from .hardnet import hardnet
 from .DDRNet_23_slim import DualResNet_imagenet
 
@@ -13,6 +13,8 @@ def get_model(cfg, device):
         model = DualResNet_imagenet(pretrained=False, n_classes=cfg.train_config.nclass).to(device)
     elif cfg.model.name == 'UNetWithResnet50Encoder':
         model = UNetWithResnet50Encoder(in_channel=cfg.train_config.colors,n_classes=cfg.train_config.nclass).to(device)
+    elif cfg.model.name == 'UNetWithResnet50Hybrid':
+        model = UNetWithResnet50Hybrid(in_channel=cfg.train_config.colors,n_classes=cfg.train_config.nclass).to(device)
     else: 
         raise NameError('Choose proper model name!!!')
     

@@ -136,3 +136,6 @@ outputs/*
 .vscode/extensions.json
 checkpoint/resume/last_epoch.pt
 result_d2/*
+legacy_ddp/result_gray/*
+result_gray/*
+result_image/*

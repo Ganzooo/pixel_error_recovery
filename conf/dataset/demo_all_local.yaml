@@ -1,0 +1,10 @@
+## data specification
+### Train dataset.
+noised_img_path_all: '/mnt/fc7e14e7-12c0-40d0-ae3a-a01b784d81c2/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/all/'
+img_org_path_all: '/mnt/fc7e14e7-12c0-40d0-ae3a-a01b784d81c2/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_train/'
+gt_img_path_all: '/mnt/fc7e14e7-12c0-40d0-ae3a-a01b784d81c2/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/all/index/'
+
+### Val dataset.
+img_org_path_val_all: '/mnt/fc7e14e7-12c0-40d0-ae3a-a01b784d81c2/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_val/'
+noised_img_path_val_all: '/mnt/fc7e14e7-12c0-40d0-ae3a-a01b784d81c2/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val_10/all/'
+gt_img_path_val_all: '/mnt/fc7e14e7-12c0-40d0-ae3a-a01b784d81c2/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val_10/all/index/'

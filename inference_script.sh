@@ -1,0 +1,1 @@
+python3 test.py train_config.save_img_rec=True train_config.img_save_val=True dataset=demo_all_local

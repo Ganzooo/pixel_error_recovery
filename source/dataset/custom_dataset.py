@@ -95,9 +95,9 @@ class CustomDataSet(data.Dataset):
             lx, ly = random.randrange(0, _image_w - lp + 1), random.randrange(0, _image_h - lp + 1)
             hx, hy = lx, ly
             if self.colors == 1:
-                _image_patch, _gt_patch = _image[ly:ly+lp, lx:lx+lp,:], _gt[hy:hy+hp, hx:hx+hp]
+                _image_patch, _gt_patch, _imageOrg = _image[ly:ly+lp, lx:lx+lp,:], _gt[hy:hy+hp, hx:hx+hp], _imageOrg[ly:ly+lp, lx:lx+lp,:]
             else: 
-                _image_patch, _gt_patch = _image[ly:ly+lp, lx:lx+lp,:], _gt[hy:hy+hp, hx:hx+hp]
+                _image_patch, _gt_patch, _imageOrg = _image[ly:ly+lp, lx:lx+lp,:], _gt[hy:hy+hp, hx:hx+hp], _imageOrg[ly:ly+lp, lx:lx+lp,:]
             # augment data
             if self.augment:
                 #print("data augmentation!")
@@ -105,12 +105,12 @@ class CustomDataSet(data.Dataset):
                 vflip = random.random() > 0.5
                 rot90 = random.random() > 0.5
                 if self.colors == 1:
-                    if hflip: _image_patch, _gt_patch = _image_patch[:, ::-1,:], _gt_patch[:, ::-1]
-                    if vflip: _image_patch, _gt_patch = _image_patch[::-1, :,:], _gt_patch[::-1, :]
+                    if hflip: _image_patch, _gt_patch, _imageOrg = _image_patch[:, ::-1,:], _gt_patch[:, ::-1], _imageOrg[:, ::-1,:]
+                    if vflip: _image_patch, _gt_patch, _imageOrg = _image_patch[::-1, :,:], _gt_patch[::-1, :], _imageOrg[::-1, :,:]
                     #if rot90: _image_patch, _gt_patch = _image_patch.transpose(1,0,2), _gt_patch.transpose(1,0,2)
                 else: 
-                    if hflip: _image_patch, _gt_patch = _image_patch[:, ::-1, :], _gt_patch[:, ::-1]
-                    if vflip: _image_patch, _gt_patch = _image_patch[::-1, :, :], _gt_patch[::-1, :]
+                    if hflip: _image_patch, _gt_patch, _imageOrg = _image_patch[:, ::-1, :], _gt_patch[:, ::-1], _imageOrg[:, ::-1, :]
+                    if vflip: _image_patch, _gt_patch, _imageOrg = _image_patch[::-1, :, :], _gt_patch[::-1, :], _imageOrg[::-1, :, :]
                     #if rot90: _image_patch, _gt_patch = _image_patch.transpose(1,0,2), _gt_patch.transpose(1,0,2)
             # numpy to tensor
             _image_patch = _image_patch.transpose(2,0,1)
@@ -118,14 +118,11 @@ class CustomDataSet(data.Dataset):
             _image_patch = _image_patch / 255.
             _image_patch = torch.from_numpy(_image_patch).float()
             
-            #_gt_patch = _gt_patch.transpose(2,0,1)
-            #_gt_patch = np.squeeze(_gt_patch, axis=0) 
-            #_gt_patch = _gt_patch / 255.
-            #_gt_patch[_gt_patch == 0] = 250 
-            #_gt_patch[_gt_patch == 255] = 1
             gt_patch = torch.from_numpy(_gt_patch.copy()).long()
-    
-            return _image_patch, gt_patch, idx, _fname, _
+            
+            _imageOrg = _imageOrg.transpose(2,0,1) / 255.
+            _imageOrg = torch.from_numpy(_imageOrg.copy()).float()
+            return _image_patch, gt_patch, idx, _fname, _imageOrg
         else:
             _image = _image.transpose(2,0,1)
             _image = _image / 255.
