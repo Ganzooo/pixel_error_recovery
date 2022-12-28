@@ -131,7 +131,7 @@ dmypy.json
 ./outputs/*
 outputs/*
 .vscode/launch.json
-checkpoint/best_epoch_unetencoder.pt
+checkpoint/*
 outputs/*
 .vscode/extensions.json
 checkpoint/resume/last_epoch.pt
