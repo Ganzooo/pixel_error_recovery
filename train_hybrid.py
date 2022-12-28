@@ -292,8 +292,7 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
 
 def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs, train_loader, valid_loader, run_log_wandb):
     # To automatically log gradients
-    #wandb.watch(model, log_freq=100)
-    
+    # wandb.watch(model, log_freq=100)
     start = time.time()
     best_miou      = -np.inf
     best_epoch     = -1
@@ -322,42 +321,42 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
         # Load the scheduler model
         # scheduler.load_state_dict(checkpoint["scheduler"])
         print("Loaded pretrained model weights.")
-    
+
     log_name = os.path.join("log.txt")
     sys.stdout = utils_sr.ExperimentLogger(log_name, sys.stdout)
     stat_dict = utils_sr.get_stat_dict()
-        
+
     for epoch in range(cfg.train_config.start_epoch, num_epochs + 1):
         acc = 0
         print(f'Epoch {epoch}/{num_epochs}', end='')
-        
+
         train_one_epoch(cfg, model, optimizer, scheduler, criterion=criterion,
                                       dataloader=train_loader,
                                       device=device, epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
-        
+
         if (epoch % cfg.train_config.test_every) == 0:
             acc = valid_one_epoch(cfg, model, valid_loader, criterion,
                                         device=device,
                                         epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
-        
+
         #epoch_PSNR = val_div2k_psnr
         if acc > best_miou:
             print("{} Valid ACC Improved at {} -> (Before: {} ---> Best: {})".format(c_, 'all', best_miou, acc))
             #print("\t{}Valid SSIM Improved at {} -> ({}), Epoch: {}/{}".format(c_,'Div2k',stat_dict['Div2k']['best_ssim']['value'], epoch, num_epochs))
             sys.stdout.flush()
-            
-            best_miou = acc
-            best_epoch        = epoch
+
+            best_miou                           = acc
+            best_epoch                          = epoch
             if cfg.train_config.wandb:
-                wandb.summary["Best Acc"]    = acc
-                wandb.summary["Best Epoch"]   = best_epoch
+                wandb.summary["Best Acc"]       = acc
+                wandb.summary["Best Epoch"]     = best_epoch
 
             # save stat dict
             ## save training paramters
             # stat_dict_name = os.path.join('./', 'stat_dict.yml')
             # with open(stat_dict_name, 'w') as stat_dict_file:
             #     yaml.dump(stat_dict, stat_dict_file, default_flow_style=False)
-        
+
             dirPath = "./run/{}".format(cfg.train_config.comment)
             PATH = f"best_epoch.pt"
             torch.save(model.state_dict(), os.path.join(dirPath,PATH))
@@ -394,16 +393,16 @@ def train(cfg : DictConfig) -> None:
     else:
         print("use cpu for training!")
         device = torch.device('cpu')
-    #torch.set_num_threads(cfg.train_config.threads)
+    # torch.set_num_threads(cfg.train_config.threads)
     
     ### For use original path.
     ### For debug...
-    #currPath = os.getcwd()
-    #os.chdir(currPath)
-    #print(currPath)
+    # currPath = os.getcwd()
+    # os.chdir(currPath)
+    # print(currPath)
     # org_cwd = hydra.utils.get_original_cwd()
     # print(org_cwd)
-    
+      
     dirPath = "./run/{}".format(cfg.train_config.comment)
     if not os.path.isdir(dirPath): 
         os.makedirs(dirPath)
@@ -434,6 +433,6 @@ def train(cfg : DictConfig) -> None:
                                 run_log_wandb=run_log_wandb)
     if cfg.train_config.wandb:
         run_log_wandb.finish()
-        
+
 if __name__ == '__main__':
     train()
