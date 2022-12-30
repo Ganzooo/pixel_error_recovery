@@ -3,7 +3,22 @@ import torch.nn as nn
 import torchvision
 #resnet = torchvision.models.resnet.resnet50(pretrained=True)
 
-
+class BasicResBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, padding=1, kernel_size=3, stride=1):
+        super().__init__()
+        self.residual_block = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, padding=padding),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, padding=padding),
+        )
+        self.relu = nn.ReLU()
+        
+    def forward(self, x):
+        out = self.residual_block(x) #F(x)
+        out = out + x #F(x) + x
+        out = self.relu(out)
+        return out
+    
 class ConvBlock(nn.Module):
     """
     Helper module that consists of a Conv -> BN -> ReLU
@@ -174,10 +189,20 @@ class UNetWithResnet50Hybrid(nn.Module):
                                                     up_conv_in_channels=128, up_conv_out_channels=64))
         self.up_blocks_recovery = nn.ModuleList(up_blocks_recovery)
         
-        self.out_recovery = nn.Conv2d(64, in_channel, kernel_size=1, stride=1)
+        #self.out_recovery = nn.Conv2d(64, in_channel, kernel_size=1, stride=1)
+        self.trans = nn.Conv2d(64, 32, kernel_size=1, stride=1)
+        
+        self.BasicResBlock = nn.Sequential(
+            BasicResBlock(in_channels=32, out_channels=32),
+            BasicResBlock(in_channels=32, out_channels=32),
+            BasicResBlock(in_channels=32, out_channels=32),
+            BasicResBlock(in_channels=32, out_channels=32),
+        )
+        self.out_recovery = nn.Conv2d(32, in_channel, kernel_size=1, stride=1)
         
     def forward(self, x, with_output_feature_map=False):
         pre_pools = dict()
+        org_x = x 
         pre_pools[f"layer_0"] = x
         x = self.input_block(x)
         pre_pools[f"layer_1"] = x
@@ -198,28 +223,23 @@ class UNetWithResnet50Hybrid(nn.Module):
         for i, block in enumerate(self.up_blocks, 1):
             key = f"layer_{UNetWithResnet50Hybrid.DEPTH - 1 - i}"
             x_det = block(x_det, pre_pools[key])
-        output_feature_map = x_det
         x_det = self.out(x_det)
-        #del pre_pools
         
         ### Recovery
         for i, block in enumerate(self.up_blocks_recovery, 1):
             key = f"layer_{UNetWithResnet50Hybrid.DEPTH - 1 - i}"
             x_rec = block(x_rec, pre_pools[key])
-        #output_feature_map = x
+    
+        x_rec = self.trans(x_rec)
+        x_rec = self.BasicResBlock(x_rec)
         x_rec = self.out_recovery(x_rec)
+        
+        #Residual add
+        x_rec = x_rec + org_x
         del pre_pools
         
-        if with_output_feature_map:
-            return x, output_feature_map
-        else:
-            return x_det, x_rec
+        return x_det, x_rec
         
-# model = UNetWithResnet50Encoder().cuda()
-# inp = torch.rand((1, 3, 512, 512)).cuda()
-# out = model(inp)
-# print(out)
-
 if __name__ == "__main__":
     model = UNetWithResnet50Hybrid(in_channel = 3, n_classes=2, pretrained=True).cuda()
     inp = torch.rand((10, 3, 512, 512)).cuda()
