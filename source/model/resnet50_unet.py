@@ -177,7 +177,7 @@ class UNetWithResnet50Hybrid(nn.Module):
         self.up_blocks = nn.ModuleList(up_blocks)
 
         self.out = nn.Conv2d(64, n_classes, kernel_size=1, stride=1)
-        
+
         ### Decoder branch for pixel recover
         up_blocks_recovery = []
         up_blocks_recovery.append(UpBlockForUNetWithResNet50(2048, 1024))
@@ -188,10 +188,10 @@ class UNetWithResnet50Hybrid(nn.Module):
         up_blocks_recovery.append(UpBlockForUNetWithResNet50(in_channels=64 + in_channel, out_channels=64,
                                                     up_conv_in_channels=128, up_conv_out_channels=64))
         self.up_blocks_recovery = nn.ModuleList(up_blocks_recovery)
-        
+
         #self.out_recovery = nn.Conv2d(64, in_channel, kernel_size=1, stride=1)
         self.trans = nn.Conv2d(64, 32, kernel_size=1, stride=1)
-        
+
         self.BasicResBlock = nn.Sequential(
             BasicResBlock(in_channels=32, out_channels=32),
             BasicResBlock(in_channels=32, out_channels=32),
@@ -199,7 +199,7 @@ class UNetWithResnet50Hybrid(nn.Module):
             BasicResBlock(in_channels=32, out_channels=32),
         )
         self.out_recovery = nn.Conv2d(32, in_channel, kernel_size=1, stride=1)
-        
+
     def forward(self, x, with_output_feature_map=False):
         pre_pools = dict()
         org_x = x 
@@ -215,7 +215,7 @@ class UNetWithResnet50Hybrid(nn.Module):
             pre_pools[f"layer_{i}"] = x
 
         x_bridge = self.bridge(x)
-        
+
         x_det = x_bridge
         x_rec = x_bridge
 
@@ -224,20 +224,20 @@ class UNetWithResnet50Hybrid(nn.Module):
             key = f"layer_{UNetWithResnet50Hybrid.DEPTH - 1 - i}"
             x_det = block(x_det, pre_pools[key])
         x_det = self.out(x_det)
-        
+
         ### Recovery
         for i, block in enumerate(self.up_blocks_recovery, 1):
             key = f"layer_{UNetWithResnet50Hybrid.DEPTH - 1 - i}"
             x_rec = block(x_rec, pre_pools[key])
-    
+
         x_rec = self.trans(x_rec)
         x_rec = self.BasicResBlock(x_rec)
         x_rec = self.out_recovery(x_rec)
-        
+
         #Residual add
         x_rec = x_rec + org_x
         del pre_pools
-        
+
         return x_det, x_rec
         
 if __name__ == "__main__":

@@ -44,5 +44,6 @@ train_config:
   threads: 16
   wandb: 1
   fsize: 2
+  use_masked_loss: True
 losses:
-  name:         'bootstrapped_cross_entropy2d_hybrid_l1'
+  name:         'bootstrapped_cross_entropy2d_hybrid_ml1'

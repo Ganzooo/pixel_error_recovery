@@ -21,7 +21,7 @@ train_config:
 
   ## parameters for model training
   patch_size: 128
-  batch_size: 128
+  batch_size: 10
   batch_size_val: 1
   data_repeat: 1
   data_augment: 1
@@ -36,7 +36,7 @@ train_config:
   ignore_index: 250
   #pretrain: '/workspace/09_CHALLENGE/ECCV/ECBSR/chekpoint/model_x3_75.pt'
   testmodelpath:  #'/mnt/data_main/NETWORK/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/best_epoch_unet_resnet50_ch3.pt'
-  pretrain: '/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/best_epoch.pt'
+  pretrain: '/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/last_epoch_hybrid_ml1.pt'
   resume: 
   mixed_pred: False
   ## hardware specification
@@ -44,5 +44,6 @@ train_config:
   threads: 1
   wandb: 1
   fsize: 2
+  use_masked_loss: True
 losses:
-  name:         'bootstrapped_cross_entropy2d_hybrid_l1'
+  name:         'bootstrapped_cross_entropy2d_hybrid_ml1'

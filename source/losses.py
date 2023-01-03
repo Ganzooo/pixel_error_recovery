@@ -109,6 +109,32 @@ class bootstrapped_cross_entropy2d_l1_hybrid(torch.nn.modules.loss._Loss):
         loss = self.w1 * loss1 + self.w2 * loss2
         return loss
     
+class MaskedL1Loss(torch.nn.Module):
+    def __init__(self):
+        super(MaskedL1Loss, self).__init__()
+    def forward(self, input, target, mask):
+        # diff = (torch.flatten(input) - torch.flatten(target)) ** 2.0 * torch.flatten(mask)
+        # result = torch.sum(diff) / torch.sum(mask)
+        return torch.sum(((input-target)*mask)**2.0)  / torch.sum(mask)
+        
+class bootstrapped_cross_entropy2d_ml1_hybrid(torch.nn.modules.loss._Loss):
+    def __init__(self, size_average=True, reduce=False, reduction='mean', ignore_index=250):
+        super(bootstrapped_cross_entropy2d_ml1_hybrid, self).__init__(size_average, reduce, reduction)
+        self.detection = bootstrapped_cross_entropy2d()
+        self.recovery = MaskedL1Loss()
+        self.w1 = 0.5
+        self.w2 = 0.5
+        
+    def forward(self, input, target, input_rec, target_rec, mask):
+        n, c, h, w = input.size()
+        nt, ht, wt = target.size()
+        batch_size = input.size()[0]
+
+        loss1 = self.detection(input, target)
+        loss2 = self.recovery(input_rec, target_rec, mask)
+        loss = self.w1 * loss1 + self.w2 * loss2
+        return loss
+    
 def get_criterion(cfg):
     if cfg.losses.name == 'l1':
         return nn.L1Loss()
@@ -124,14 +150,21 @@ def get_criterion(cfg):
         return smp.losses.DiceLoss(mode='multiclass', ignore_index=cfg.train_config.ignore_index)
     elif cfg.losses.name == 'bootstrapped_cross_entropy2d_hybrid_l1':
         return bootstrapped_cross_entropy2d_l1_hybrid()
+    elif cfg.losses.name == 'bootstrapped_cross_entropy2d_hybrid_ml1':
+        return bootstrapped_cross_entropy2d_ml1_hybrid()
     else: 
         raise NameError('Choose proper model name!!!')
 
 if __name__ == "__main__":
-    true = np.array([1.0, 1.2, 1.1, 1.4, 1.5, 1.8, 1.9])
-    pred = np.array([1.0, 1.2, 1.1, 1.4, 1.5, 1.8, 1.9])
+    # true = np.array([1.0, 1.2, 1.1, 1.4, 1.5, 1.8, 1.9])
+    # pred = np.array([1.0, 1.2, 1.1, 1.4, 1.5, 1.8, 1.9])
+    # loss = get_criterion(pred, true)
+    # print(loss)
+    loss = MaskedL1Loss()
     
-    
-    
-    loss = get_criterion(pred, true)
-    print(loss)
+    predict = torch.tensor([1.0, 2, 3, 4], dtype=torch.float64, requires_grad=True)
+    target = torch.tensor([1.0, 1, 1, 1], dtype=torch.float64,  requires_grad=True)
+    mask = torch.tensor([1, 0, 0, 1], dtype=torch.float64, requires_grad=True)
+    out = loss(predict, target, mask)
+    out.backward()
+    print(out)

@@ -17,7 +17,7 @@ def _ndarray2tensor(ndarray_hwc):
     return tensor
 
 class CustomDataSet(data.Dataset):
-    def __init__(self, image_folder, gt_folder, image_org_folder, train=True, augment=True, scale=2, colors=1, patch_size=96, repeat=168, store_in_ram=True):
+    def __init__(self, image_folder, gt_folder, image_org_folder, train=True, augment=True, scale=2, colors=1, patch_size=96, repeat=168, store_in_ram=True, use_mask_loss=True):
         super(CustomDataSet, self).__init__()
         self.image_folder = image_folder
         self.gt_folder = gt_folder
@@ -31,6 +31,7 @@ class CustomDataSet(data.Dataset):
         self.patch_size = patch_size
         self.repeat = repeat
         self.nums_trainset = 0
+        self.use_mask_loss = use_mask_loss
 
         self.imageName = []
         self.gtName = []
@@ -122,7 +123,18 @@ class CustomDataSet(data.Dataset):
             
             _imageOrg = _imageOrg.transpose(2,0,1) / 255.
             _imageOrg = torch.from_numpy(_imageOrg.copy()).float()
-            return _image_patch, gt_patch, idx, _fname, _imageOrg
+            
+            if self.use_mask_loss:
+                mask = gt_patch
+                mask[mask > 0] = 1
+                if self.colors == 3:
+                    mask = torch.unsqueeze(mask, dim=0)
+                    _mask = torch.cat([mask, mask, mask], dim=0)
+                else: 
+                    _mask = mask
+                return _image_patch, gt_patch, idx, _fname, _imageOrg, _mask
+            else:
+                return _image_patch, gt_patch, idx, _fname, _imageOrg
         else:
             _image = _image.transpose(2,0,1)
             _image = _image / 255.

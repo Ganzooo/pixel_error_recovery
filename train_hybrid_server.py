@@ -49,7 +49,6 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
     scaler = amp.GradScaler()
     max_norm = 5.0
     
-    
     stat_dict['epochs'] = epoch
     
     for _dl in dataloader:
@@ -60,9 +59,14 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
         
         pbar = tqdm(enumerate(dataloader), total=len(dataloader), desc='Train {}:'.format(name))
         for step, (data) in pbar:
-
-            _image_patch, _gt_patch, _idx, _fname, _org_img = data
-            _image_patch, _gt_patch, _org_img = _image_patch.to(device), _gt_patch.to(device), _org_img.to(device)
+            
+            use_mask_loss = cfg.train_config.use_masked_loss
+            if use_mask_loss:
+                _image_patch, _gt_patch, _idx, _fname, _org_img, _mask = data    
+                _image_patch, _gt_patch, _org_img, _mask = _image_patch.to(device), _gt_patch.to(device), _org_img.to(device), _mask.to(device)
+            else:
+                _image_patch, _gt_patch, _idx, _fname, _org_img = data
+                _image_patch, _gt_patch, _org_img = _image_patch.to(device), _gt_patch.to(device), _org_img.to(device)
                 
             batch_size = _image_patch.size(0)
             
@@ -88,7 +92,7 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 scaler.update()
             else: 
                 _pred, _rec = model(_image_patch)
-                loss = criterion(_pred, _gt_patch, _rec, _org_img)
+                loss = criterion(_pred, _gt_patch, _rec, _org_img, _mask)
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
@@ -383,7 +387,7 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
 @hydra.main(config_path="conf", config_name="config_server_hybrid")
 def train(cfg : DictConfig) -> None:
     set_seed()
-    
+
     device = None
     if cfg.train_config.gpu_id >= 0 and torch.cuda.is_available():
         print("use cuda & cudnn for acceleration!")

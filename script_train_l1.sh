@@ -1,1 +1,0 @@
-python train_server.py train_config.description=ep500 train_config.epochs=500 train_config.gpu_id=0
