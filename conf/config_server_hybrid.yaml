@@ -22,7 +22,7 @@ train_config:
   ## parameters for model training
   patch_size: 128
   batch_size: 256
-  batch_size_val: 64
+  batch_size_val: 48
   data_repeat: 1
   data_augment: 1
   start_epoch: 0
