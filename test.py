@@ -382,5 +382,73 @@ def validate(cfg : DictConfig) -> None:
                                 train_loader=None,
                                 valid_loader=valid_loader, 
                                 model_path= cfg.train_config.testmodelpath)
+
+@hydra.main(config_path="conf", config_name="config_hybrid")
+def torch_to_onnx(cfg : DictConfig) -> None:
+    device = None
+    if cfg.train_config.gpu_id >= 0 and torch.cuda.is_available():
+        print("use cuda & cudnn for acceleration!")
+        print("the gpu id is: {}".format(cfg.train_config.gpu_id))
+        device = torch.device('cuda:{}'.format(cfg.train_config.gpu_id))
+        torch.backends.cudnn.benchmark = True
+    else:
+        print("use cpu for training!")
+        device = torch.device('cpu')
+    
+    model = get_model(cfg, device)
+    print("load test model: {}!".format(cfg.train_config.testmodelpath))
+    model.load_state_dict(torch.load(cfg.train_config.testmodelpath))
+    simplify = True
+    # ONNX export
+    try:
+        import onnx
+        fileName = './resnet50_hybrid.onnx'
+        img = torch.zeros(1, 3, 128,128).to(device)
+        print('\nStarting ONNX export with onnx %s...' % onnx.__version__)
+        model.eval()
+        output_names = ['recovery', 'detect'] #if y is None else ['output']
+        dynamic_axes = None
+
+        torch.onnx.export(model, img, fileName, verbose=False, opset_version=12, input_names=['images'],
+                          output_names=output_names,
+                          dynamic_axes=dynamic_axes)
+
+        # Checks
+        onnx_model = onnx.load(fileName)  # load onnx model
+        onnx.checker.check_model(onnx_model)  # check onnx model
+
+        #if opt.end2end and opt.max_wh is None:
+        #    for i in onnx_model.graph.output:
+        #        for j in i.type.tensor_type.shape.dim:
+        #            j.dim_param = str(shapes.pop(0))
+
+        # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
+
+        # # Metadata
+        # d = {'stride': int(max(model.stride))}
+        # for k, v in d.items():
+        #     meta = onnx_model.metadata_props.add()
+        #     meta.key, meta.value = k, str(v)
+        # onnx.save(onnx_model, f)
+
+        if simplify:
+            try:
+                import onnxsim
+
+                print('\nStarting to simplify ONNX...')
+                onnx_model, check = onnxsim.simplify(onnx_model)
+                assert check, 'assert check failed'
+            except Exception as e:
+                print(f'Simplifier failure: {e}')
+
+        # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
+        onnx.save(onnx_model,fileName)
+        print('ONNX export success, saved as %s' % fileName)
+
+    except Exception as e:
+        print('ONNX export failure: %s' % e)
+        
+    
 if __name__ == '__main__':
     validate()
+    #torch_to_onnx()

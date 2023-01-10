@@ -8,8 +8,8 @@ import datetime
 import os
 import sys
 
-def calc_psnr(sr, hr):
-    diff = (sr - hr) / 1.00
+def calc_psnr(sr, hr, max_value=255):
+    diff = (sr - hr) / max_value
     mse  = diff.pow(2).mean()
     psnr = -10 * math.log10(mse)                    
     return float(psnr)

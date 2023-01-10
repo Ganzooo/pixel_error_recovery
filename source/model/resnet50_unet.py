@@ -147,7 +147,7 @@ class UNetWithResnet50Encoder(nn.Module):
         else:
             return x
 
-class UNetWithResnet50Hybrid(nn.Module):
+class UNetWithResnet50HybridV2(nn.Module):
     DEPTH = 6
 
     def __init__(self, in_channel = 3, n_classes=3, pretrained=True):
@@ -210,6 +210,92 @@ class UNetWithResnet50Hybrid(nn.Module):
 
         for i, block in enumerate(self.down_blocks, 2):
             x = block(x)
+            if i == (UNetWithResnet50HybridV2.DEPTH - 1):
+                continue
+            pre_pools[f"layer_{i}"] = x
+
+        x_bridge = self.bridge(x)
+
+        x_det = x_bridge
+        x_rec = x_bridge
+
+        ### Detection
+        for i, block in enumerate(self.up_blocks, 1):
+            key = f"layer_{UNetWithResnet50HybridV2.DEPTH - 1 - i}"
+            x_det = block(x_det, pre_pools[key])
+        x_det = self.out(x_det)
+
+        ### Recovery
+        for i, block in enumerate(self.up_blocks_recovery, 1):
+            key = f"layer_{UNetWithResnet50HybridV2.DEPTH - 1 - i}"
+            x_rec = block(x_rec, pre_pools[key])
+
+        x_rec = self.trans(x_rec)
+        x_rec = self.BasicResBlock(x_rec)
+        x_rec = self.out_recovery(x_rec)
+
+        #Residual add
+        x_rec = x_rec + org_x
+        del pre_pools
+
+        return x_det, x_rec
+        
+class UNetWithResnet50Hybrid(nn.Module):
+    DEPTH = 6
+
+    def __init__(self, in_channel = 3, n_classes=3, pretrained=True):
+        super().__init__()
+        resnet = torchvision.models.resnet.resnet50(pretrained=pretrained)
+        if in_channel == 1:
+            resnet.conv1 = nn.Conv2d(in_channel, 64, kernel_size=7, stride=2, padding=3,bias=False)
+        down_blocks = []
+        up_blocks = []
+        self.input_block = nn.Sequential(*list(resnet.children()))[:3]
+        self.input_pool = list(resnet.children())[3]
+        for bottleneck in list(resnet.children()):
+            if isinstance(bottleneck, nn.Sequential):
+                down_blocks.append(bottleneck)
+        self.down_blocks = nn.ModuleList(down_blocks)
+        self.bridge = Bridge(2048, 2048)
+        
+        ### Decoder branch for pixel detection
+        up_blocks.append(UpBlockForUNetWithResNet50(2048, 1024))
+        up_blocks.append(UpBlockForUNetWithResNet50(1024, 512))
+        up_blocks.append(UpBlockForUNetWithResNet50(512, 256))
+        up_blocks.append(UpBlockForUNetWithResNet50(in_channels=128 + 64, out_channels=128,
+                                                    up_conv_in_channels=256, up_conv_out_channels=128))
+        up_blocks.append(UpBlockForUNetWithResNet50(in_channels=64 + in_channel, out_channels=64,
+                                                    up_conv_in_channels=128, up_conv_out_channels=64))
+
+        self.up_blocks = nn.ModuleList(up_blocks)
+
+        self.out = nn.Conv2d(64, n_classes, kernel_size=1, stride=1)
+
+        ### Decoder branch for pixel recover
+        up_blocks_recovery = []
+        up_blocks_recovery.append(UpBlockForUNetWithResNet50(2048, 1024))
+        up_blocks_recovery.append(UpBlockForUNetWithResNet50(1024, 512))
+        up_blocks_recovery.append(UpBlockForUNetWithResNet50(512, 256))
+        up_blocks_recovery.append(UpBlockForUNetWithResNet50(in_channels=128 + 64, out_channels=128,
+                                                    up_conv_in_channels=256, up_conv_out_channels=128))
+        up_blocks_recovery.append(UpBlockForUNetWithResNet50(in_channels=64 + in_channel, out_channels=64,
+                                                    up_conv_in_channels=128, up_conv_out_channels=64))
+        self.up_blocks_recovery = nn.ModuleList(up_blocks_recovery)
+
+        #self.out_recovery = nn.Conv2d(64, in_channel, kernel_size=1, stride=1)
+        self.trans = nn.Conv2d(64, 32, kernel_size=1, stride=1)
+        self.out_recovery = nn.Conv2d(32, in_channel, kernel_size=1, stride=1)
+
+    def forward(self, x, with_output_feature_map=False):
+        pre_pools = dict()
+        org_x = x 
+        pre_pools[f"layer_0"] = x
+        x = self.input_block(x)
+        pre_pools[f"layer_1"] = x
+        x = self.input_pool(x)
+
+        for i, block in enumerate(self.down_blocks, 2):
+            x = block(x)
             if i == (UNetWithResnet50Hybrid.DEPTH - 1):
                 continue
             pre_pools[f"layer_{i}"] = x
@@ -231,15 +317,13 @@ class UNetWithResnet50Hybrid(nn.Module):
             x_rec = block(x_rec, pre_pools[key])
 
         x_rec = self.trans(x_rec)
-        x_rec = self.BasicResBlock(x_rec)
         x_rec = self.out_recovery(x_rec)
 
-        #Residual add
-        x_rec = x_rec + org_x
+        # #Residual add
+        # x_rec = x_rec + org_x
         del pre_pools
-
         return x_det, x_rec
-        
+    
 if __name__ == "__main__":
     model = UNetWithResnet50Hybrid(in_channel = 3, n_classes=2, pretrained=True).cuda()
     inp = torch.rand((10, 3, 512, 512)).cuda()
