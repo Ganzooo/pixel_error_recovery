@@ -99,10 +99,11 @@ class plainRP(nn.Module):
         return y
 
 if __name__ == "__main__":
-    # x = torch.rand(1,3,128,128).cuda()
-    # model_dp = plainDP(module_nums=4, channel_nums=32, num_class=2, act_type='relu', colors=3, use_bn=True).cuda()
-    # model_rp = plainRP(module_nums=4, channel_nums=32, act_type='relu', colors=3, use_bn=True).cuda()
+    x = torch.rand(1,3,128,128).cuda()
+    model_dp = plainDP(module_nums=4, channel_nums=32, num_class=2, act_type='relu', colors=3, use_bn=True).cuda()
+    model_rp = plainRP(module_nums=4, channel_nums=32, act_type='relu', colors=3, use_bn=True).cuda()
 
-    # summary_(model_dp,(3,128,128), batch_size=16)
-    # summary_(model_rp,(3,128,128), batch_size=16)   
+    summary_(model_dp,(3,128,128), batch_size=16)
+    summary_(model_rp,(3,128,128), batch_size=16)
+    
     
