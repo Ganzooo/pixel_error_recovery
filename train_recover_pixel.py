@@ -34,6 +34,9 @@ sr_ = Style.RESET_ALL
 import warnings
 warnings.filterwarnings("ignore")
 
+import os
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+
 #Wandb and mlflow
 import wandb
 
