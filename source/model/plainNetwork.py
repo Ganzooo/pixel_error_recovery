@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchsummary import summary as summary_
+from source.utils.media_filter_torch import MedianPool2d
 
 class Conv3X3(nn.Module):
     def __init__(self, inp_planes, out_planes, act_type='relu', use_bn=False):
@@ -38,7 +39,7 @@ class Conv3X3(nn.Module):
         return y
 
 class plainDP(nn.Module):
-    def __init__(self, module_nums=4, channel_nums=32, num_class=2, act_type='relu', colors=3, use_bn=True):
+    def __init__(self, module_nums=4, channel_nums=32, num_class=2, act_type='relu', colors=3, use_bn=True, rec_mode = True):
         super(plainDP, self).__init__()
         self.module_nums = module_nums
         self.channel_nums = channel_nums
@@ -48,6 +49,7 @@ class plainDP(nn.Module):
         self.upsampler = None
         self.use_bn = use_bn
         self.num_class = num_class
+        self.rec_mode = rec_mode
 
         backbone = []
         backbone += [Conv3X3(inp_planes=self.colors, out_planes=self.channel_nums, act_type=self.act_type, use_bn=self.use_bn)]
@@ -57,13 +59,30 @@ class plainDP(nn.Module):
         self.backbone = nn.Sequential(*backbone)
 
         self.seghead = torch.nn.Conv2d(self.channel_nums, self.num_class, kernel_size=1)
+        
+        if self.rec_mode:
+            self.median_filter = MedianPool2d()
     
     def forward(self, x):
         #y = self.backbone(x) + x
         #_x = torch.cat([x, x, x, x, x, x, x, x, x], dim=1)
         y = self.backbone(x) #+ _x
         y = self.seghead(y)
-        return y
+        
+        if self.rec_mode:
+            msk = y.data.max(1)[1].squeeze(axis=0)
+            mask = torch.cat([msk.unsqueeze(axis=1),msk.unsqueeze(axis=1),msk.unsqueeze(axis=1)],dim=1)
+            
+            x_median = self.median_filter(x)
+            x_median = torch.mul(x_median, mask)
+            
+            msk_inv = torch.ones_like(x_median)
+            msk_inv[x_median>0] = 0
+            
+            y_rec = (torch.mul(x,msk_inv) + x_median)
+            
+            return y, y_rec
+        return y, _
     
 class plainRP(nn.Module):
     def __init__(self, module_nums=4, channel_nums=32, act_type='relu', colors=3, use_bn=True):

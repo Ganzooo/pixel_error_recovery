@@ -87,7 +87,7 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 # Updates the scale for next iteration.
                 scaler.update()
             else: 
-                _pred = model(_image_patch)
+                _pred, _rec_img = model(_image_patch)
                 loss = criterion(_pred, _gt_patch)
                 loss.backward()
                 optimizer.step()
@@ -110,6 +110,8 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 pred = _pred.data.max(1)[1].cpu().numpy()
                 gt = _gt_patch.data.cpu().numpy() 
                 img = _image_patch.data.cpu().numpy() 
+                _rec_img = _rec_img *255
+                rec_img = _rec_img.cpu().numpy()[0].transpose(1,2,0)
                 
                 dirPath = "./result_image/train/{}/".format(name)
                 fname = str(step).zfill(4)
@@ -135,7 +137,7 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 _gt[_gt == 0] = 0
                 _gt[_gt == 1] = 128
                 
-                temp0 = np.concatenate((_gt, _img, _pred),axis=1)
+                temp0 = np.concatenate((_gt, _img, _pred, rec_img),axis=1)
                 save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'),temp0.astype(np.uint8), color_domain='rgb')
                 
             #if cfg.train_config.debug and step < 10:
@@ -147,7 +149,112 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
         
     stat_dict['losses'].append(epoch_loss.avg)
     return epoch_loss.avg, stat_dict
+   
+@torch.no_grad()
+def valid_one_epoch_rec(cfg, model, dataloader, criterion, device, epoch, stat_dict, run_log_wandb):
+    model.eval()
     
+    #avg_ssim = AverageMeter()
+    count = 0
+    test_log = ""
+    name = 'PER'
+    
+    acc_all = []
+    psnr_all = []
+    for _dl in dataloader:
+        name = _dl['name']
+        dataloader = _dl['dataloader']
+        running_metrics_val = runningScore(n_classes=cfg.train_config.nclass)
+        val_loss_meter = AverageMeter()
+        pbar = tqdm(dataloader, total=len(dataloader), desc='Valid: {}'.format(name))
+        count = 0
+        
+        acc_db = []
+        psnr_db = []
+        dirPath = "./result_image/val/{}/".format(name)
+                 
+        for _image_patch, _gt_patch, _idx, _fname, _imageOrg_patch in pbar:
+            
+            _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
+            
+            _start_pixel_err = time.time()
+            
+            _pred, _rec_img = model(_image_patch)
+            
+            _end_pixel_err = time.time()
+            
+            count += _image_patch.size(0)
+            
+            _imgPred = []
+            _imgRec = []
+            if cfg.train_config.pixel_recovery:
+                filter_size = cfg.train_config.fsize
+                #pred = np.squeeze(_pred.data.max(1)[1].cpu().numpy(), axis=0)
+                #gt = np.squeeze(_gt_patch.data.cpu().numpy(), axis=0)
+
+                ### Pred data
+                for b in range(_pred.shape[0]):
+                    #pred = _pred.data.max(1)[1].squeeze(axis=0)
+                    pred = _pred.data.max(1)[1][b]
+                    #index = torch.where(pred==1)
+                    
+                    gt = _gt_patch[b]
+                    rec_img = _rec_img*255
+                    
+                    acc_rec = accuracy_score(gt.cpu(), pred.cpu())
+                    #acc_rec = np.round(float(total_erro_pixel_Pred/total_erro_pixel_GT),2)
+                    acc_db.append(acc_rec)
+                    
+                    _imgRec = rec_img[b].permute(1,2,0).type(torch.uint8).cpu().numpy()
+                    _imgOrg = _imageOrg_patch[b]
+                    psnr = psnr_calc(_imgOrg.numpy(),_imgRec)
+                    psnr_db.append(psnr)
+                    
+                    _end_pixel_rec = time.time()
+                
+                    if cfg.train_config.save_img_rec:
+                        #fname = str(name) + '_munster_' + str(int(_idx[b])).zfill(6) + '_000019_leftImg8bit_recover.png'
+                        fname = os.path.basename(_fname[b])
+                        save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), _imgRec, color_domain='rgb')
+                    
+                        #with open(os.path.join(dirPath,"result.csv"), "a") as file:
+                        #    file.write("{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname), str(acc_rec),str(psnr), (_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
+                
+            pbar.set_postfix(epoch=f'{epoch}', acc=f'{acc_rec:0.4f}', psnr=f'{psnr:0.2f}')
+        
+        score, class_iou = running_metrics_val.get_scores()
+        _score=[]
+        
+        for k, v in score.items():
+           _score.append(v)
+           
+        print('Accuracy mean({}) = {}'.format(name, mean(acc_db)))
+        acc_all.append(mean(acc_db))
+        
+        if cfg.train_config.pixel_recovery:
+            print('PSNR mean({}) = {}'.format(name, mean(psnr_db)))    
+            psnr_all.append(mean(psnr_db))
+            
+        running_metrics_val.reset()    
+        
+        if cfg.train_config.wandb:
+            if cfg.train_config.pixel_recovery:
+                                # Log the metrics
+                wandb.log({
+                    "val/Valid Loss ({})".format(name): val_loss_meter.avg,
+                    "val/Valid ACC {} - ".format(name): mean(acc_db),
+                    "val/Valid PSNR {} - ".format(name): mean(psnr_db),
+                    })
+            else: 
+                # Log the metrics
+                wandb.log({
+                    "val/Valid Loss ({})".format(name): val_loss_meter.avg,
+                    "val/Valid ACC {} - ".format(name): mean(acc_db),
+                    })
+    
+    print("ALL Accuracy:::", mean(acc_all)) 
+    return mean(acc_all)
+ 
 @torch.no_grad()
 def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict, run_log_wandb):
     model.eval()
@@ -356,7 +463,12 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
                                        device=device, epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
         
         if (epoch % cfg.train_config.test_every) == 0:
-            acc = valid_one_epoch(cfg, model, valid_loader, criterion,
+            if cfg.train_config.recovery_mode:
+                acc = valid_one_epoch_rec(cfg, model, valid_loader, criterion,
+                                        device=device,
+                                        epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
+            else:
+                acc = valid_one_epoch(cfg, model, valid_loader, criterion,
                                         device=device,
                                         epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
         
@@ -401,7 +513,7 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
     print("Best ACC Score: {:.4f}".format(best_miou))
     return model
 
-@hydra.main(config_path="conf", config_name="config")
+@hydra.main(config_path="conf", config_name="config_detect")
 def train(cfg : DictConfig) -> None:
     set_seed()
     

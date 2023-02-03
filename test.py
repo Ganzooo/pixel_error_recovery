@@ -448,7 +448,8 @@ def torch_to_onnx(cfg : DictConfig) -> None:
     except Exception as e:
         print('ONNX export failure: %s' % e)
         
-    
+
 if __name__ == '__main__':
-    validate()
+    #validate()
     #torch_to_onnx()
+    

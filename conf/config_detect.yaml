@@ -1,6 +1,6 @@
 defaults:
 - dataset: train_grb_all #train_grb_all #train_grb #train_grb_all #demo #dataset_gray #main #server_train_rgb
-- model: plain_recovery_pixel #plain_detection_pixel #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
+- model: plain_detection_pixel #plain_detection_pixel #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
 - optimizer: adam  #adam
 #- hydra/sweeper: optuna #Optuna hyperparamater optimization program
 
@@ -22,7 +22,7 @@ train_config:
   ## parameters for model training
   patch_size: 128
   batch_size: 32
-  batch_size_val: 1
+  batch_size_val: 2
   data_repeat: 1
   data_augment: 1
   start_epoch: 0
@@ -35,8 +35,8 @@ train_config:
   nclass: 2
   ignore_index: 250
   #pretrain: '/workspace/09_CHALLENGE/ECCV/ECBSR/chekpoint/model_x3_75.pt'
-  testmodelpath: '/mnt/data_main/NETWORK/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/best_epoch_unet_resnet50_ch3.pt'
-  pretrain: #'/mnt/data_main/NETWORK/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/best_epoch_unet_resnet50_ch3.pt'
+  testmodelpath: '/mnt/data_main/NETWORK/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/best_epoch_DP.pt'
+  pretrain: #'/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/best_epoch_DP.pt'
   resume: 
   mixed_pred: False
   ## hardware specification
@@ -45,5 +45,6 @@ train_config:
   wandb: 1
   fsize: 2
   use_masked_loss: False
+  recovery_mode: True
 losses:
   name:         'bootstrapped_cross_entropy2d'
