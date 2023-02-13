@@ -92,7 +92,8 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 scaler.update()
             else: 
                 _pred, _rec = model(_image_patch)
-                loss = criterion(_pred, _gt_patch, _rec, _org_img, _mask)
+                #loss = criterion(_pred, _gt_patch, _rec, _org_img, _mask)
+                loss = criterion(_pred, _gt_patch, _rec, _org_img)
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()

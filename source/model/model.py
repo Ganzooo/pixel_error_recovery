@@ -2,7 +2,7 @@ import torch
 from .resnet50_unet import UNetWithResnet50Encoder, UNetWithResnet50Hybrid, UNetWithResnet50HybridV2
 from .hardnet import hardnet
 from .DDRNet_23_slim import DualResNet_imagenet
-from .plainNetwork import plainDP, plainRP
+from .plainNetwork import plainDP, plainRP, plainHYBRID
 
 def get_model(cfg, device):
     if cfg.model.name == 'unet_res50':
@@ -22,6 +22,8 @@ def get_model(cfg, device):
         model = plainDP(module_nums=cfg.model.num_module, channel_nums=cfg.model.channel_nums, num_class=cfg.train_config.nclass, act_type='relu', colors=cfg.train_config.colors, use_bn=cfg.model.use_bn)
     elif cfg.model.name == 'plainRP':
         model = plainRP(module_nums=cfg.model.num_module, channel_nums=cfg.model.channel_nums, act_type='relu', colors=cfg.train_config.colors, use_bn=cfg.model.use_bn)
+    elif cfg.model.name == 'plainHYBRID':
+        model = plainHYBRID(module_nums=cfg.model.num_module, channel_nums=cfg.model.channel_nums, act_type='relu', colors=cfg.train_config.colors, use_bn=cfg.model.use_bn, rec_mode=cfg.model.rec_mode)
     else: 
         raise NameError('Choose proper model name!!!')
     

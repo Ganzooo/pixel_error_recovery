@@ -1,6 +1,6 @@
 defaults:
 - dataset: train_grb_all #demo_all #train_grb_all #train_grb #train_grb_all #demo #dataset_gray #main #server_train_rgb
-- model: UNetWithResnet50Hybrid #UNetWithResnet50Hybrid #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
+- model: plain_hybrid_pixel #UNetWithResnet50Hybrid #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
 - optimizer: adam  #adam
 #- hydra/sweeper: optuna #Optuna hyperparamater optimization program
 
@@ -22,7 +22,7 @@ train_config:
   ## parameters for model training
   patch_size: 128
   batch_size: 10
-  batch_size_val: 1
+  batch_size_val: 2
   data_repeat: 1
   data_augment: 1
   start_epoch: 0
@@ -46,4 +46,4 @@ train_config:
   fsize: 2
   use_masked_loss: True
 losses:
-  name:         'bootstrapped_cross_entropy2d_hybrid_ml2'
+  name:         'bootstrapped_cross_entropy2d_hybrid_l2'
