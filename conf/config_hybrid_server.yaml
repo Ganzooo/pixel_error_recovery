@@ -46,4 +46,4 @@ train_config:
   fsize: 2
   use_masked_loss: True
 losses:
-  name:         'bootstrapped_cross_entropy2d_hybrid_l1'
+  name:         'bootstrapped_cross_entropy2d_hybrid_l2'
