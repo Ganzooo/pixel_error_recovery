@@ -13,17 +13,17 @@ train_config:
   description: "local_hybrid"
   comment:    ${model.name}_ep_${train_config.epochs}_op_${optimizer.name}_lr_${optimizer.lr}_size_${train_config.patch_size}_loss_${losses.name}_des_${train_config.description}
   device:     "cuda"
-  img_save_val: False
+  img_save_val: True
   pixel_recovery: True
   save_img_rec: True
   warm_up: True
   db_split: False
 
   ## parameters for model training
-  patch_size: 128
-  batch_size: 10
-  batch_size_val: 2
-  data_repeat: 1
+  patch_size: 256
+  batch_size: 32
+  batch_size_val: 10
+  data_repeat: 2
   data_augment: 1
   start_epoch: 0
   epochs: 400

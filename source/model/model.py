@@ -23,7 +23,7 @@ def get_model(cfg, device):
     elif cfg.model.name == 'plainRP':
         model = plainRP(module_nums=cfg.model.num_module, channel_nums=cfg.model.channel_nums, act_type='relu', colors=cfg.train_config.colors, use_bn=cfg.model.use_bn)
     elif cfg.model.name == 'plainHYBRID':
-        model = plainHYBRID(module_nums=cfg.model.num_module, channel_nums=cfg.model.channel_nums, act_type='relu', colors=cfg.train_config.colors, use_bn=cfg.model.use_bn, rec_mode=cfg.model.rec_mode)
+        model = plainHYBRID(module_nums=cfg.model.num_module, channel_nums=cfg.model.channel_nums, act_type=cfg.model.activation, colors=cfg.train_config.colors, use_bn_det=cfg.model.use_bn_det, use_bn_rec=cfg.model.use_bn_rec, rec_mode=cfg.model.rec_mode)
     else: 
         raise NameError('Choose proper model name!!!')
     

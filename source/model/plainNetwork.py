@@ -40,6 +40,42 @@ class Conv3X3(nn.Module):
             y = self.act(y)
         return y
 
+class Conv1X1(nn.Module):
+    def __init__(self, inp_planes, out_planes, act_type='relu', use_bn=False):
+        super(Conv1X1, self).__init__()
+
+        self.inp_planes = inp_planes
+        self.out_planes = out_planes
+        self.act_type = act_type
+
+        self.conv1x1 = torch.nn.Conv2d(self.inp_planes, self.out_planes, kernel_size=1, padding=0)
+        self.bn = torch.nn.BatchNorm2d(self.out_planes)
+        self.act  = None
+        self.use_bn = use_bn
+
+        if self.act_type == 'prelu':
+            self.act = nn.PReLU(num_parameters=self.out_planes)
+        elif self.act_type == 'relu':
+            self.act = nn.ReLU(inplace=True)
+        elif self.act_type == 'rrelu':
+            self.act = nn.RReLU(lower=-0.05, upper=0.05)
+        elif self.act_type == 'softplus':
+            self.act = nn.Softplus()
+        elif self.act_type == 'gelu':
+            self.act = nn.GELU()
+        elif self.act_type == 'linear':
+            pass
+        else:
+            raise ValueError('The type of activation if not support!')
+
+    def forward(self, x):
+        y = self.conv1x1(x)
+        if self.use_bn:
+            y = self.bn(y)
+        if self.act_type != 'linear':
+            y = self.act(y)
+        return y
+
 class plainDP(nn.Module):
     def __init__(self, module_nums=4, channel_nums=32, num_class=2, act_type='relu', colors=3, use_bn=True, rec_mode = True):
         super(plainDP, self).__init__()
@@ -120,7 +156,7 @@ class plainRP(nn.Module):
         return y
 
 class plainHYBRID(nn.Module):
-    def __init__(self, module_nums=4, channel_nums=32, num_class=2, act_type='relu', colors=3, use_bn=True, rec_mode = True):
+    def __init__(self, module_nums=4, channel_nums=32, num_class=2, act_type='relu', colors=3, use_bn_det=True, use_bn_rec=True, rec_mode = True):
         super(plainHYBRID, self).__init__()
         self.module_nums = module_nums
         self.channel_nums = channel_nums
@@ -128,30 +164,31 @@ class plainHYBRID(nn.Module):
         self.act_type = act_type
         self.backbone = None
         self.upsampler = None
-        self.use_bn = use_bn
+        self.use_bn_det = use_bn_det
+        self.use_bn_rec = use_bn_rec
         self.num_class = num_class
         self.rec_mode = rec_mode
 
         backbonePD = []
-        backbonePD += [Conv3X3(inp_planes=self.colors, out_planes=self.channel_nums, act_type=self.act_type, use_bn=self.use_bn)]
+        backbonePD += [Conv3X3(inp_planes=self.colors, out_planes=self.channel_nums, act_type=self.act_type, use_bn=self.use_bn_det)]
         for _ in range(self.module_nums):
-            backbonePD += [Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums, act_type=self.act_type, use_bn=self.use_bn)]
-        backbonePD += [Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums//2, act_type='linear', use_bn=self.use_bn)]
+            backbonePD += [Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums, act_type=self.act_type, use_bn=self.use_bn_det)]
+        backbonePD += [Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums//2, act_type='linear', use_bn=self.use_bn_det)]
         self.backbonePD = nn.Sequential(*backbonePD)
 
         self.headPD = torch.nn.Conv2d(self.channel_nums//2, self.num_class, kernel_size=1)
         
         
         backbonePR = []
-        backbonePR += [Conv3X3(inp_planes=self.colors, out_planes=self.channel_nums, act_type=self.act_type, use_bn=self.use_bn)]
+        backbonePR += [Conv3X3(inp_planes=self.colors, out_planes=self.channel_nums, act_type=self.act_type, use_bn=self.use_bn_rec)]
         for _ in range(self.module_nums):
-            backbonePR += [Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums, act_type=self.act_type, use_bn=self.use_bn)]
-        backbonePR += [Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums, act_type='linear', use_bn=self.use_bn)]
+            backbonePR += [Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums, act_type=self.act_type, use_bn=self.use_bn_rec)]
+        backbonePR += [Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums, act_type='linear', use_bn=self.use_bn_rec)]
         self.backbonePR = nn.Sequential(*backbonePR)
 
         self.trasitionPR = nn.Sequential(
-                            Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums//2, act_type=self.act_type, use_bn=self.use_bn),
-                            torch.nn.Conv2d(self.channel_nums//2, self.colors, kernel_size=1)
+                            Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums//2, act_type=self.act_type, use_bn=self.use_bn_rec),
+                            Conv1X1(inp_planes=self.channel_nums//2, out_planes=self.colors, act_type=self.act_type, use_bn=self.use_bn_rec)
         )
             
     

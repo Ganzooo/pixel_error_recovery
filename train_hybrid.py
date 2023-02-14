@@ -17,6 +17,7 @@ from source.losses import get_criterion
 from source.utils.utils import AverageMeter
 from source.utils.image_utils import save_img
 from source.utils.metrics import runningScore
+from source.utils.general import EarlyStopping
 import source.utils.utils_sr
 from statistics import mean, median
 
@@ -56,6 +57,8 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
         dataloader = _dl['dataloader']
         
         epoch_loss = AverageMeter()
+        det_loss   = AverageMeter()
+        rec_loss   = AverageMeter()
         
         pbar = tqdm(enumerate(dataloader), total=len(dataloader), desc='Train {}:'.format(name))
         for step, (data) in pbar:
@@ -93,7 +96,7 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
             else: 
                 _pred, _rec = model(_image_patch)
                 #loss = criterion(_pred, _gt_patch, _rec, _org_img, _mask)
-                loss = criterion(_pred, _gt_patch, _rec, _org_img)
+                loss, _det_loss, _rec_loss = criterion(_pred, _gt_patch, _rec, _org_img)
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
@@ -102,12 +105,16 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 scheduler.step()
                 
             epoch_loss.update(loss.item(), batch_size)
+            det_loss.update(_det_loss.item(), batch_size)
+            rec_loss.update(_rec_loss.item(), batch_size)
             
-            mem = torch.cuda.memory_reserved() / 1E9 if torch.cuda.is_available() else 0
+            mem = torch.cuda.memory_reserved(device=cfg.train_config.gpu_id) / 1E9 if torch.cuda.is_available() else 0
             current_lr = optimizer.param_groups[0]['lr']
             
             pbar.set_postfix(epoch=f'{epoch}',
                             train_loss=f'{epoch_loss.avg:0.4f}',
+                            det_loss=f'{det_loss.avg:0.4f}',
+                            rec_loss=f'{rec_loss.avg:0.4f}',
                             lr=f'{current_lr:0.5f}', 
                             gpu_mem=f'{mem:0.2f} GB')
             
@@ -145,6 +152,8 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
     if cfg.train_config.wandb:
         # Log the metrics
         wandb.log({"train/Loss": epoch_loss.avg,  
+                   "train/det_Loss": det_loss.avg,  
+                   "train/rec_Loss": rec_loss.avg,  
                "train/LR":scheduler.get_last_lr()[0]})
         
     stat_dict['losses'].append(epoch_loss.avg)
@@ -180,7 +189,8 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             _start_pixel_err = time.time()
             
             _pred, _recBatch = model(_image_patch)
-            
+            val_loss, _, _ = criterion(_pred, _gt_patch, _recBatch, _image_patch)
+            val_loss_meter.update(val_loss.item(), cfg.train_config.batch_size_val)
             _end_pixel_err = time.time()
             
             count += _image_patch.size(0)
@@ -260,7 +270,7 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_pred.jpg'), _pred.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_img_pred.jpg'), _imgPred.astype(np.uint8), color_domain='rgb')
                 
-            pbar.set_postfix(epoch=f'{epoch}', acc=f'{acc_rec:0.4f}', psnr=f'{psnr:0.2f}')
+            pbar.set_postfix(epoch=f'{epoch}', acc=f'{acc_rec:0.4f}', val_loss=f'{val_loss_meter.avg:0.2f}', psnr=f'{psnr:0.2f}')
         
         score, class_iou = running_metrics_val.get_scores()
         _score=[]
@@ -293,7 +303,8 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                     })
     
     print("ALL Accuracy:::", mean(acc_all)) 
-    return mean(acc_all)
+    print("Val Loss:::", val_loss_meter.avg)
+    return mean(acc_all), val_loss_meter.avg
 
 def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs, train_loader, valid_loader, run_log_wandb):
     # To automatically log gradients
@@ -331,36 +342,38 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
     sys.stdout = utils_sr.ExperimentLogger(log_name, sys.stdout)
     stat_dict = utils_sr.get_stat_dict()
 
+    early_stopping = EarlyStopping(tolerance=3, verbose=False)
+    
     for epoch in range(cfg.train_config.start_epoch, num_epochs + 1):
-        acc = 0
+        val_acc = 0
         print(f'Epoch {epoch}/{num_epochs}', end='')
 
         train_one_epoch(cfg, model, optimizer, scheduler, criterion=criterion,
-                                      dataloader=train_loader,
-                                      device=device, epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
+                                    dataloader=train_loader,
+                                    device=device, epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
 
         if (epoch % cfg.train_config.test_every) == 0:
-            acc = valid_one_epoch(cfg, model, valid_loader, criterion,
+            val_acc, val_loss = valid_one_epoch(cfg, model, valid_loader, criterion,
                                         device=device,
                                         epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
-
-        #epoch_PSNR = val_div2k_psnr
-        if acc > best_miou:
-            print("{} Valid ACC Improved at {} -> (Before: {} ---> Best: {})".format(c_, 'all', best_miou, acc))
+            # Early Stopping
+            early_stopping.step(val_loss)
+            if early_stopping.early_stop:
+                break
+            
+        ### Save best epoch weight file.
+        if val_acc > best_miou:
+            print("{} Valid ACC Improved at {} -> (Before: {} ---> Best: {})".format(c_, 'all', best_miou, val_acc))
             #print("\t{}Valid SSIM Improved at {} -> ({}), Epoch: {}/{}".format(c_,'Div2k',stat_dict['Div2k']['best_ssim']['value'], epoch, num_epochs))
             sys.stdout.flush()
 
-            best_miou                           = acc
+            best_miou                           = val_acc
             best_epoch                          = epoch
+            best_val_loss                       = val_loss
             if cfg.train_config.wandb:
-                wandb.summary["Best Acc"]       = acc
+                wandb.summary["Best Acc"]       = val_acc
                 wandb.summary["Best Epoch"]     = best_epoch
-
-            # save stat dict
-            ## save training paramters
-            # stat_dict_name = os.path.join('./', 'stat_dict.yml')
-            # with open(stat_dict_name, 'w') as stat_dict_file:
-            #     yaml.dump(stat_dict, stat_dict_file, default_flow_style=False)
+                wandb.summary["Best Val Loss"]  = best_val_loss
 
             dirPath = "./run/{}".format(cfg.train_config.comment)
             PATH = f"best_epoch.pt"
@@ -399,14 +412,6 @@ def train(cfg : DictConfig) -> None:
         print("use cpu for training!")
         device = torch.device('cpu')
     # torch.set_num_threads(cfg.train_config.threads)
-    
-    ### For use original path.
-    ### For debug...
-    # currPath = os.getcwd()
-    # os.chdir(currPath)
-    # print(currPath)
-    # org_cwd = hydra.utils.get_original_cwd()
-    # print(org_cwd)
       
     dirPath = "./run/{}".format(cfg.train_config.comment)
     if not os.path.isdir(dirPath): 

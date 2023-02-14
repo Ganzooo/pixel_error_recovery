@@ -1,6 +1,7 @@
 name: 'plainHYBRID' 
 num_module: 4
-activation: 'relu'
+activation: 'gelu'
 channel_nums: 32
-use_bn: True
+use_bn_det: True
+use_bn_rec: False
 rec_mode: True
