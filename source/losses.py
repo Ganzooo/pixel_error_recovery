@@ -96,8 +96,8 @@ class bootstrapped_cross_entropy2d_l1_hybrid(torch.nn.modules.loss._Loss):
         super(bootstrapped_cross_entropy2d_l1_hybrid, self).__init__(size_average, reduce, reduction)
         self.detection = bootstrapped_cross_entropy2d()
         self.recovery = torch.nn.L1Loss()
-        self.w1 = 0.5
-        self.w2 = 0.5
+        self.w1 = 1
+        self.w2 = 2
         
     def forward(self, input, target, input_rec, target_rec):
         n, c, h, w = input.size()
@@ -107,7 +107,7 @@ class bootstrapped_cross_entropy2d_l1_hybrid(torch.nn.modules.loss._Loss):
         loss1 = self.detection(input, target)
         loss2 = self.recovery(input_rec, target_rec)
         loss = self.w1 * loss1 + self.w2 * loss2
-        return loss
+        return loss, loss1, loss2
     
 class bootstrapped_cross_entropy2d_l2_hybrid(torch.nn.modules.loss._Loss):
     def __init__(self, size_average=True, reduce=False, reduction='mean', ignore_index=250):

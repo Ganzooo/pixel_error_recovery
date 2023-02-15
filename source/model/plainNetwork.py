@@ -191,7 +191,6 @@ class plainHYBRID(nn.Module):
                             Conv1X1(inp_planes=self.channel_nums//2, out_planes=self.colors, act_type=self.act_type, use_bn=self.use_bn_rec)
         )
             
-    
     def forward(self, x):
         #y = self.backbone(x) + x
         #_x = torch.cat([x, x, x, x, x, x, x, x, x], dim=1)
@@ -220,6 +219,3 @@ if __name__ == "__main__":
     #summary_(model_dp,(3,128,128), batch_size=16)
     #summary_(model_rp,(3,128,128), batch_size=16)
     summary_(model_hybrid,(3,128,128), batch_size=16)
-    
-    
-    

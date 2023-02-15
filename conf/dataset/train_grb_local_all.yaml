@@ -1,0 +1,10 @@
+## data specification
+### Train dataset.
+noised_img_path_all: 'dataset/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/all/'
+img_org_path_all: 'dataset/DEFECTION_NOISE_PAPER/gt_train/'
+gt_img_path_all: 'dataset/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/all/index/'
+
+### Val dataset.
+noised_img_path_val_all: 'dataset/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/all/'
+img_org_path_val_all: 'dataset/DEFECTION_NOISE_PAPER/gt_val/'
+gt_img_path_val_all: 'dataset/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/all/index/'

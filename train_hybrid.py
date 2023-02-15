@@ -231,10 +231,12 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                         #with open(os.path.join(dirPath,"result.csv"), "a") as file:
                         #    file.write("{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname), str(acc_rec),str(psnr), (_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
             
-            if cfg.train_config.img_save_val and count < 81:  
+            if cfg.train_config.img_save_val and count < 100:  
                 pred = _pred.data.max(1)[1].cpu().numpy()
                 gt = _gt_patch.data.cpu().numpy()
                 img = _image_patch.data.cpu().numpy()
+                imgRec = _recBatch[0].cpu() * 255
+                imgRec = imgRec.numpy().transpose(1,2,0)
                 
                 fname = str(count).zfill(4)
                 
@@ -263,13 +265,12 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 _gt[_gt == 1] = 255
                 
                 ### Save images
-                temp0 = np.concatenate((_gt, _img, _pred, _imgRec),axis=1)
+                temp0 = np.concatenate((_gt, _img, _pred, imgRec),axis=1)
                 save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'), temp0.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_gt.jpg'), _gt.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_img.jpg'), _img.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_pred.jpg'), _pred.astype(np.uint8), color_domain='rgb')
                 #save_img(os.path.join(dirPath, str(epoch), fname + '_img_pred.jpg'), _imgPred.astype(np.uint8), color_domain='rgb')
-                
             pbar.set_postfix(epoch=f'{epoch}', acc=f'{acc_rec:0.4f}', val_loss=f'{val_loss_meter.avg:0.2f}', psnr=f'{psnr:0.2f}')
         
         score, class_iou = running_metrics_val.get_scores()

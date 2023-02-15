@@ -9,6 +9,7 @@ import torch
 import torch.utils.data as data
 import skimage.color as sc
 import time
+import hydra
 #from source.utils.utils_sr import ndarray2tensor
 
 def _ndarray2tensor(ndarray_hwc):
@@ -36,9 +37,10 @@ class CustomDataSet(data.Dataset):
         self.imageName = []
         self.gtName = []
         self.imageOrgName = []
+        self.org_path = hydra.utils.get_original_cwd()
 
-        _imgPath = sorted(glob.glob(self.image_folder + '*.png'))
-        _imgPathGT = sorted(glob.glob(self.gt_folder + '*.png'))
+        _imgPath = sorted(glob.glob(os.path.join(self.org_path,self.image_folder) + '*.png'))
+        _imgPathGT = sorted(glob.glob(os.path.join(self.org_path,self.gt_folder) + '*.png'))
         assert len(_imgPath) == len(_imgPathGT)
         for idx, (_imgNameHR, _imgNameLR) in enumerate(zip(_imgPath, _imgPathGT)):
             self.imageName.append(_imgNameHR)
@@ -48,17 +50,17 @@ class CustomDataSet(data.Dataset):
                 base_name = _name[4] + '_' + _name[5] + '_' + _name[6] + '_' + _name[7]
             else: 
                 base_name = _name[3] + '_' + _name[4] + '_' + _name[5] + '_' + _name[6]
-            self.imageOrgName.append(os.path.join(self.image_org_folder,base_name))
+            self.imageOrgName.append(os.path.join(os.path.join(self.org_path,self.image_org_folder),base_name))
 
         self.nums_trainset = len(_imgPath)
 
         if self.store_in_ram:
+            print('Storing image into RAM')
             self.images = []
             self.gts = []
             self.fname = []
             self.imagesOrg = []
             
-
             for i in range(len(_imgPath)):
                 _image, _gt, _imageOrg = imageio.imread(self.imageName[i], pilmode="RGB"), imageio.imread(self.gtName[i], pilmode="RGB"), imageio.imread(self.imageOrgName[i], pilmode="RGB")
                 if self.colors == 1:
@@ -68,6 +70,8 @@ class CustomDataSet(data.Dataset):
                 self.gts.append(_gt) 
                 self.fname.append(self.imageName[i])
                 self.imagesOrg.append(_imageOrg)
+                if i % 500:
+                    print('Stored image into RAM:', i)
                 
     def __len__(self):
         if self.train:
