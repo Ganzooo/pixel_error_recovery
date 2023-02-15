@@ -30,7 +30,6 @@ train_config:
   log_every: 100
   test_every: 5
   log_path: "./experiments"
-  lr: 0.0005
   store_in_ram: 0
   nclass: 2
   ignore_index: 250
