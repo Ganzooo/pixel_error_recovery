@@ -344,6 +344,7 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
     stat_dict = utils_sr.get_stat_dict()
 
     early_stopping = EarlyStopping(tolerance=3, verbose=False)
+    wandb.watch(model, criterion=criterion, log='all')
     
     for epoch in range(cfg.train_config.start_epoch, num_epochs + 1):
         val_acc = 0
