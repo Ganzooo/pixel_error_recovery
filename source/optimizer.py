@@ -21,13 +21,14 @@ def get_optimizer(cfg, model):
 
 def get_scheduler(cfg, optimizer):
     _T_max         = int(30000/cfg.train_config.batch_size*cfg.train_config.epochs)+50
-    _T_0           = 25
+    _T_0           = cfg.train_config.epochs // cfg.optimizer.t0_cycle
+    _T_mult        = cfg.optimizer.t_mult
     
     if cfg.optimizer.scheduler == 'CosineAnnealingLR':
         scheduler = lr_scheduler.CosineAnnealingLR(optimizer,T_max = _T_max, 
                                                    eta_min=cfg.optimizer.min_lr)
     elif cfg.optimizer.scheduler == 'CosineAnnealingWarmRestarts':
-        scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer,T_0 = _T_0, 
+        scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer,T_0 = _T_0, T_mult=2,
                                                              eta_min=cfg.optimizer.min_lr)
     elif cfg.optimizer.scheduler == 'ReduceLROnPlateau':
         scheduler = lr_scheduler.ReduceLROnPlateau(optimizer,

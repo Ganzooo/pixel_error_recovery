@@ -3,6 +3,7 @@ from .resnet50_unet import UNetWithResnet50Encoder, UNetWithResnet50Hybrid, UNet
 from .hardnet import hardnet
 from .DDRNet_23_slim import DualResNet_imagenet
 from .plainNetwork import plainDP, plainRP, plainHYBRID
+from .NAFNet import NAFNet
 
 def get_model(cfg, device):
     if cfg.model.name == 'unet_res50':
@@ -24,9 +25,10 @@ def get_model(cfg, device):
         model = plainRP(module_nums=cfg.model.num_module, channel_nums=cfg.model.channel_nums, act_type='relu', colors=cfg.train_config.colors, use_bn=cfg.model.use_bn)
     elif cfg.model.name == 'plainHYBRID':
         model = plainHYBRID(module_nums=cfg.model.num_module, channel_nums=cfg.model.channel_nums, act_type=cfg.model.activation, colors=cfg.train_config.colors, use_bn_det=cfg.model.use_bn_det, use_bn_rec=cfg.model.use_bn_rec, rec_mode=cfg.model.rec_mode)
+    elif cfg.model.name == 'NAFNet':
+        model = NAFNet(img_channel=cfg.model.in_channel, width=cfg.model.width, middle_blk_num=cfg.model.middle_blk_num, enc_blk_nums=cfg.model.enc_blks, dec_blk_nums=cfg.model.dec_blks)
     else: 
         raise NameError('Choose proper model name!!!')
-    
     model.to(device)
     return model
 

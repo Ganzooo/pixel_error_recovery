@@ -1,0 +1,8 @@
+## data specification
+### Train dataset.
+noised_img_path_all: '/dataset/SR/Denoise/DIV2K/DIV2K_train_HR_noise/'
+gt_img_path_all: '/dataset/SR/Denoise/DIV2K/DIV2K_train_HR/'
+
+### Val dataset.
+noised_img_path_val_all: '/dataset/SR/Denoise/DIV2K/DIV2K_valid_HR_noise/'
+gt_img_path_val_all: '/dataset/SR/Denoise/DIV2K/DIV2K_valid_HR/'
