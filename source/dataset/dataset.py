@@ -13,6 +13,7 @@ import albumentations as A
 import albumentations.pytorch as Ap
 from source.dataset.custom_dataset import CustomDataSet
 from source.dataset.denoise_dataset import DenoiseDataSet
+from source.dataset.sr_dataset import SrDataSet
 
 def get_dataset(cfg):
     train_dataloaders = []
@@ -27,7 +28,16 @@ def get_dataset(cfg):
         train_dataloaders += [{'name': 'all', 'dataloader': DataLoader(dataset=noiseDataTrain_all, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
         valid_dataloaders += [{'name': 'all', 'dataloader': DataLoader(dataset=noiseDataValid_all, batch_size=cfg.train_config.batch_size_val, shuffle=False)}]
         return train_dataloaders, valid_dataloaders
-
+    elif cfg.train_config.mode == 'sr':
+        noiseDataTrain_all = SrDataSet(cfg.dataset.lr_img_path_all, cfg.dataset.gt_img_path_all, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
+        patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram, use_mask_loss=cfg.train_config.use_masked_loss)
+        noiseDataValid_all = SrDataSet(cfg.dataset.lr_img_path_val_all, cfg.dataset.gt_img_path_val_all, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
+            repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram, use_mask_loss=cfg.train_config.use_masked_loss)
+        
+        train_dataloaders += [{'name': 'all', 'dataloader': DataLoader(dataset=noiseDataTrain_all, num_workers=cfg.train_config.threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
+        valid_dataloaders += [{'name': 'all', 'dataloader': DataLoader(dataset=noiseDataValid_all, batch_size=cfg.train_config.batch_size_val, shuffle=False)}]
+        return train_dataloaders, valid_dataloaders
+    
     if cfg.train_config.db_split:
         noiseDataTrain_pr1 = CustomDataSet(cfg.dataset.noised_img_path_pr1, cfg.dataset.gt_img_path_pr1, cfg.dataset.img_org_path_all, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
             patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram)

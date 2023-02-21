@@ -1,0 +1,6 @@
+name: 'IMDN' 
+in_channel: 3
+width: 32
+middle_blk_num: 12
+enc_blks: [2, 2, 4, 8]
+dec_blks: [2, 2, 2, 2]

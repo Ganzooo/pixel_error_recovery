@@ -1,48 +1,49 @@
 defaults:
-- dataset: train_grb_local_all #demo_all #train_grb_all #train_grb #train_grb_all #demo #dataset_gray #main #server_train_rgb
-- model: plain_hybrid_pixel #UNetWithResnet50Hybrid #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
+- dataset: train_sr #train_grb_local_all #demo_all #train_grb_all #train_grb #train_grb_all #demo #dataset_gray #main #server_train_rgb
+- model: IMDN #UNetWithResnet50Hybrid #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
 - optimizer: adam  #adam
 #- hydra/sweeper: optuna #Optuna hyperparamater optimization program
 
 train_config:
-  scale: 1
+  scale: 3
   colors: 3
-  mode: 'hybrid'
+  mode: 'sr'
   seed:       101
   debug:      False #set debug=False for Full Training
-  description: "local_hybrid"
+  description: "sr"
   comment:    ${model.name}_ep_${train_config.epochs}_op_${optimizer.name}_lr_${optimizer.lr}_size_${train_config.patch_size}_loss_${losses.name}_des_${train_config.description}
   device:     "cuda"
   img_save_val: True
   pixel_recovery: True
   save_img_rec: True
-  warm_up: True
+  warm_up: False
   db_split: False
 
   ## parameters for model training
-  patch_size: 256
+  patch_size: 128
   batch_size: 16
-  batch_size_val: 5
-  data_repeat: 2
+  batch_size_val: 1
+  data_repeat: 1
   data_augment: 1
   start_epoch: 0
   epochs: 400
   log_every: 100
-  test_every: 5
+  test_every: 1
   log_path: "./experiments"
   store_in_ram: 0
   nclass: 2
   ignore_index: 250
   #pretrain: '/workspace/09_CHALLENGE/ECCV/ECBSR/chekpoint/model_x3_75.pt'
-  testmodelpath:  '/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/last_epoch_hybrid_ml1.pt'
+  #testmodelpath:  '/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/last_epoch_hybrid_ml1.pt'
   pretrain: #'/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/last_epoch_hybrid_ml1.pt'
   resume: 
   mixed_pred: False
   ## hardware specification
   gpu_id: 1
   threads: 1
-  wandb: 1
+  wandb: 0
   fsize: 2
   use_masked_loss: False
+  early_stop: 10
 losses:
-  name:         'bootstrapped_cross_entropy2d_hybrid_l1'
+  name:         'l1'

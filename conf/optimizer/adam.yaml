@@ -3,5 +3,5 @@ lr:            0.0005
 scheduler:    'CosineAnnealingWarmRestarts'
 min_lr:        0.00001
 warmup_epochs: 1
-t0_cycle : 4
-t_mult   : 2
+t0_cycle : 1
+t_mult   : 0

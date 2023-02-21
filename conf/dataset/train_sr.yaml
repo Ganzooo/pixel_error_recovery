@@ -1,0 +1,8 @@
+## data specification
+### Train dataset.
+lr_img_path_all: '/dataset/SR/DIV2K/DIV2K_train_LR_bicubic/X3/'
+gt_img_path_all: '/dataset/SR/DIV2K/DIV2K_train_HR/'
+
+### Val dataset.
+lr_img_path_val_all: '/dataset/SR/DIV2K/DIV2K_valid_LR_bicubic/X3/'
+gt_img_path_val_all: '/dataset/SR/DIV2K/DIV2K_valid_HR/'

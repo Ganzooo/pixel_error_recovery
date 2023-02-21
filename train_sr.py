@@ -11,6 +11,7 @@ import gc
 
 from source.dataset.dataset import get_dataset
 from source.model.model import get_model
+#from source.model.model_sr import get_model_sr
 from source.optimizer import get_optimizer, get_scheduler
 from source.utils.config import set_seed
 from source.losses import get_criterion
@@ -63,13 +64,8 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
         pbar = tqdm(enumerate(dataloader), total=len(dataloader), desc='Train {}:'.format(name))
         for step, (data) in pbar:
             
-            use_mask_loss = cfg.train_config.use_masked_loss
-            if use_mask_loss:
-                _image_patch, _gt_patch, _idx, _fname, _org_img, _mask = data    
-                _image_patch, _gt_patch, _org_img, _mask = _image_patch.to(device), _gt_patch.to(device), _org_img.to(device), _mask.to(device)
-            else:
-                _image_patch, _gt_patch, _idx, _fname, _org_img = data
-                _image_patch, _gt_patch, _org_img = _image_patch.to(device), _gt_patch.to(device), _org_img.to(device)
+            _image_patch, _gt_patch, _idx, _fname = data
+            _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
                 
             batch_size = _image_patch.size(0)
             
@@ -94,66 +90,45 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 # Updates the scale for next iteration.
                 scaler.update()
             else: 
-                _pred, _rec = model(_image_patch)
+                _pred = model(_image_patch)
                 #loss = criterion(_pred, _gt_patch, _rec, _org_img, _mask)
-                loss, _det_loss, _rec_loss = criterion(_pred, _gt_patch, _rec, _org_img)
+                loss = criterion(_pred, _gt_patch)
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
                 
+            if scheduler is not None:
+                scheduler.step()
+                
             epoch_loss.update(loss.item(), batch_size)
-            det_loss.update(_det_loss.item(), batch_size)
-            rec_loss.update(_rec_loss.item(), batch_size)
             
             mem = torch.cuda.memory_reserved(device=cfg.train_config.gpu_id) / 1E9 if torch.cuda.is_available() else 0
-            current_lr = optimizer.param_groups[0]['lr']
+            current_lr = scheduler.get_last_lr()[0]
             
             pbar.set_postfix(epoch=f'{epoch}',
                             train_loss=f'{epoch_loss.avg:0.4f}',
-                            det_loss=f'{det_loss.avg:0.4f}',
-                            rec_loss=f'{rec_loss.avg:0.4f}',
                             lr=f'{current_lr:0.5f}', 
                             gpu_mem=f'{mem:0.2f} GB')
             
             if cfg.train_config.img_save_val and step < 10: 
-                pred = _pred.data.max(1)[1].cpu().numpy()
+                pred = _pred.data.cpu().numpy()
                 gt = _gt_patch.data.cpu().numpy() 
                 img = _image_patch.data.cpu().numpy() 
                 
                 dirPath = "./result_image/train/{}/".format(name)
                 fname = str(step).zfill(4)
                 
-                if cfg.train_config.colors == 1:
-                    _img = img[0]
-                    _img = np.concatenate((_img,_img,_img), axis=0).transpose(1,2,0) * 255
-                else: 
-                    _img = img[0].transpose(1,2,0)*255
+                _img = img[0].transpose(1,2,0)*255
+                _pred = pred[0].transpose(1,2,0)*255
+                _gt = gt[0].transpose(1,2,0)*255
                 
-                _pred = pred[0]
-                _pred = np.expand_dims(_pred,axis=0)
-                _pred = np.concatenate((_pred,_pred,_pred), axis=0).transpose(1,2,0)
+                temp0 = np.concatenate((_gt, _pred),axis=1)
                 
-                _gt = gt[0]
-                _gt = np.expand_dims(_gt,axis=0)
-                _gt = np.concatenate((_gt,_gt,_gt), axis=0).transpose(1,2,0)
-                
-                _pred[_pred == 0] = 0
-                _pred[_pred == 1] = 255
-                
-                _gt[_gt == 0] = 0
-                _gt[_gt == 1] = 128
-                
-                temp0 = np.concatenate((_gt, _img, _pred),axis=1)
                 save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'),temp0.astype(np.uint8), color_domain='rgb')
     
-    if scheduler is not None:
-        scheduler.step()
-                
     if cfg.train_config.wandb:
         # Log the metrics
         wandb.log({"train/Loss": epoch_loss.avg,  
-                   "train/det_Loss": det_loss.avg,  
-                   "train/rec_Loss": rec_loss.avg,  
                "train/LR":scheduler.get_last_lr()[0]})
         
     stat_dict['losses'].append(epoch_loss.avg)
@@ -182,14 +157,14 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
         psnr_db = []
         dirPath = "./result_image/val/{}/".format(name)
                  
-        for _image_patch, _gt_patch, _idx, _fname, _imageOrg_patch in pbar:
+        for _image_patch, _gt_patch, _idx, _fname in pbar:
             
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
             
             _start_pixel_err = time.time()
             
-            _pred, _recBatch = model(_image_patch)
-            val_loss, _, _ = criterion(_pred, _gt_patch, _recBatch, _image_patch)
+            _pred = model(_image_patch)
+            val_loss = criterion(_pred, _gt_patch)
             val_loss_meter.update(val_loss.item(), cfg.train_config.batch_size_val)
             _end_pixel_err = time.time()
             
@@ -198,89 +173,24 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             _imgPred = []
             _imgRec = []
 
-            if cfg.train_config.pixel_recovery:
-                filter_size = cfg.train_config.fsize
-                #pred = np.squeeze(_pred.data.max(1)[1].cpu().numpy(), axis=0)
-                #gt = np.squeeze(_gt_patch.data.cpu().numpy(), axis=0)
-
-                ### Pred data
-                for b in range(_pred.shape[0]):
-                    #pred = _pred.data.max(1)[1].squeeze(axis=0)
-                    pred = _pred.data.max(1)[1][b]
-                    index = torch.where(pred==1)
-                    
-                    gt = _gt_patch[b]
-                    
-                    acc_rec = accuracy_score(gt.cpu(), pred.cpu())
-                    #acc_rec = np.round(float(total_erro_pixel_Pred/total_erro_pixel_GT),2)
-                    acc_db.append(acc_rec)
-
-                    _rec = _recBatch[b].cpu() * 255
-                    _rec = _rec.permute(1,2,0).long()
-                    _imgOrg = _imageOrg_patch[b]
-                    psnr = psnr_calc(_imgOrg.numpy(),_rec.numpy().astype(np.uint8))
-                    psnr_db.append(psnr)
-
-                    _end_pixel_rec = time.time()
+            ### Pred data
+            for b in range(_pred.shape[0]):
+                pred = _pred[b]*255
+                gt = _gt_patch[b]*255
                 
-                    if cfg.train_config.save_img_rec:
-                        #fname = str(name) + '_munster_' + str(int(_idx[b])).zfill(6) + '_000019_leftImg8bit_recover.png'
-                        fname = os.path.basename(_fname[b])
-                        save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), _rec.numpy().astype(np.uint8), color_domain='rgb')
-                    
-                        #with open(os.path.join(dirPath,"result.csv"), "a") as file:
-                        #    file.write("{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname), str(acc_rec),str(psnr), (_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
+                #acc_rec = accuracy_score(gt.cpu(), pred.cpu())
+                #acc_rec = np.round(float(total_erro_pixel_Pred/total_erro_pixel_GT),2)
+                #acc_db.append(acc_rec)
+
+                psnr = psnr_calc(pred.cpu().numpy().astype(np.uint8),gt.cpu().numpy().astype(np.uint8))
+                psnr_db.append(psnr)
+
+                _end_pixel_rec = time.time()
             
-            if cfg.train_config.img_save_val and count < 100:  
-                pred = _pred.data.max(1)[1].cpu().numpy()
-                gt = _gt_patch.data.cpu().numpy()
-                img = _image_patch.data.cpu().numpy()
-                imgRec = _recBatch[0].cpu() * 255
-                imgRec = imgRec.numpy().transpose(1,2,0)
-                
-                fname = str(count).zfill(4)
-                
-                _pred = pred[0]
-                _pred = np.expand_dims(_pred,axis=0)
-                _pred_one = np.squeeze(_pred,axis=0)
-                
-                _pred = np.concatenate((_pred,_pred,_pred), axis=0).transpose(1,2,0)
-                
-                _pred[_pred == 1] = 255
-                
-                _gt = gt[0]
-                _gt = np.expand_dims(_gt,axis=0)
-                _gt = np.concatenate((_gt,_gt,_gt), axis=0).transpose(1,2,0)
-                
-                if cfg.train_config.colors == 1:
-                    _img = img[0]
-                    _img = np.concatenate((_img, _img, _img), axis=0).transpose(1,2,0) * 255
-                else: 
-                    _img = img[0].transpose(1,2,0)*255
-                
-                _pred[_pred == 0] = 0
-                _pred[_pred == 1] = 255
-                
-                _gt[_gt == 0] = 0
-                _gt[_gt == 1] = 255
-                
-                ### Save images
-                temp0 = np.concatenate((_gt, _img, _pred, imgRec),axis=1)
-                save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'), temp0.astype(np.uint8), color_domain='rgb')
-                #save_img(os.path.join(dirPath, str(epoch), fname + '_gt.jpg'), _gt.astype(np.uint8), color_domain='rgb')
-                #save_img(os.path.join(dirPath, str(epoch), fname + '_img.jpg'), _img.astype(np.uint8), color_domain='rgb')
-                #save_img(os.path.join(dirPath, str(epoch), fname + '_pred.jpg'), _pred.astype(np.uint8), color_domain='rgb')
-                #save_img(os.path.join(dirPath, str(epoch), fname + '_img_pred.jpg'), _imgPred.astype(np.uint8), color_domain='rgb')
-            pbar.set_postfix(epoch=f'{epoch}', acc=f'{acc_rec:0.4f}', val_loss=f'{val_loss_meter.avg:0.2f}', psnr=f'{psnr:0.2f}')
-        
-        score, class_iou = running_metrics_val.get_scores()
-        _score=[]
-        
-        for k, v in score.items():
-           _score.append(v)
-           
-        print('Accuracy mean({}) = {}'.format(name, mean(acc_db)))
-        acc_all.append(mean(acc_db))
+                if cfg.train_config.save_img_rec:
+                    fname = os.path.basename(_fname[b])
+                    save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), pred.cpu().numpy().transpose(1,2,0).astype(np.uint8), color_domain='rgb')
+            pbar.set_postfix(epoch=f'{epoch}', val_loss=f'{val_loss_meter.avg:0.2f}', psnr=f'{psnr:0.2f}')
         
         if cfg.train_config.pixel_recovery:
             print('PSNR mean({}) = {}'.format(name, mean(psnr_db)))    
@@ -289,29 +199,20 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
         running_metrics_val.reset()    
         
         if cfg.train_config.wandb:
-            if cfg.train_config.pixel_recovery:
-                                # Log the metrics
-                wandb.log({
-                    "val/Valid Loss ({})".format(name): val_loss_meter.avg,
-                    "val/Valid ACC {} - ".format(name): mean(acc_db),
-                    "val/Valid PSNR {} - ".format(name): mean(psnr_db),
-                    })
-            else: 
-                # Log the metrics
-                wandb.log({
-                    "val/Valid Loss ({})".format(name): val_loss_meter.avg,
-                    "val/Valid ACC {} - ".format(name): mean(acc_db),
-                    })
-    
-    print("ALL Accuracy:::", mean(acc_all)) 
+            # Log the metrics
+            wandb.log({
+                "val/Valid Loss ({})".format(name): val_loss_meter.avg,
+                "val/Valid PSNR {} - ".format(name): mean(psnr_db),
+                })
+   
     print("Val Loss:::", val_loss_meter.avg)
-    return mean(acc_all), val_loss_meter.avg
+    return mean(psnr_db), val_loss_meter.avg
 
 def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs, train_loader, valid_loader, run_log_wandb):
     # To automatically log gradients
     # wandb.watch(model, log_freq=100)
     start = time.time()
-    best_miou      = -np.inf
+    best_psnr      = -np.inf
     best_epoch     = -1
     
     if cfg.train_config.pretrain is not None:
@@ -343,11 +244,12 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
     sys.stdout = utils_sr.ExperimentLogger(log_name, sys.stdout)
     stat_dict = utils_sr.get_stat_dict()
 
-    early_stopping = EarlyStopping(tolerance=3, verbose=False)
-    wandb.watch(model, criterion=criterion, log='all')
+    early_stopping = EarlyStopping(tolerance=cfg.train_config.early_stop, verbose=False)
+    if cfg.train_config.wandb:
+        wandb.watch(model, criterion=criterion, log='all')
     
     for epoch in range(cfg.train_config.start_epoch, num_epochs + 1):
-        val_acc = 0
+        val_pnsr = 0
         print(f'Epoch {epoch}/{num_epochs}', end='')
 
         train_one_epoch(cfg, model, optimizer, scheduler, criterion=criterion,
@@ -355,25 +257,25 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
                                     device=device, epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
 
         if (epoch % cfg.train_config.test_every) == 0:
-            val_acc, val_loss = valid_one_epoch(cfg, model, valid_loader, criterion,
+            val_pnsr, val_loss = valid_one_epoch(cfg, model, valid_loader, criterion,
                                         device=device,
                                         epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
-            # Early Stopping
-            early_stopping.step(val_loss)
-            if early_stopping.early_stop:
-                break
+            # # Early Stopping
+            # early_stopping.step(val_loss)
+            # if early_stopping.early_stop:
+            #     break
             
         ### Save best epoch weight file.
-        if val_acc > best_miou:
-            print("{} Valid ACC Improved at {} -> (Before: {} ---> Best: {})".format(c_, 'all', best_miou, val_acc))
+        if val_pnsr > best_psnr:
+            print("{} Valid ACC Improved at {} -> (Before: {} ---> Best: {})".format(c_, 'all', best_psnr, val_pnsr))
             #print("\t{}Valid SSIM Improved at {} -> ({}), Epoch: {}/{}".format(c_,'Div2k',stat_dict['Div2k']['best_ssim']['value'], epoch, num_epochs))
             sys.stdout.flush()
 
-            best_miou                           = val_acc
+            best_psnr                           = val_pnsr
             best_epoch                          = epoch
             best_val_loss                       = val_loss
             if cfg.train_config.wandb:
-                wandb.summary["Best Acc"]       = val_acc
+                wandb.summary["Best PSNR"]       = val_pnsr
                 wandb.summary["Best Epoch"]     = best_epoch
                 wandb.summary["Best Val Loss"]  = best_val_loss
 
@@ -397,10 +299,10 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
     time_elapsed = end - start
     print('Training complete in {:.0f}h {:.0f}m {:.0f}s'.format(
         time_elapsed // 3600, (time_elapsed % 3600) // 60, (time_elapsed % 3600) % 60))
-    print("Best ACC Score: {:.4f}".format(best_miou))
+    print("Best ACC Score: {:.4f}".format(best_psnr))
     return model
 
-@hydra.main(config_path="conf", config_name="config_hybrid")
+@hydra.main(config_path="conf", config_name="config_sr")
 def train(cfg : DictConfig) -> None:
     set_seed()
 
