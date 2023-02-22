@@ -358,10 +358,10 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
             val_acc, val_loss = valid_one_epoch(cfg, model, valid_loader, criterion,
                                         device=device,
                                         epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
-            # Early Stopping
-            early_stopping.step(val_loss)
-            if early_stopping.early_stop:
-                break
+            # # Early Stopping
+            # early_stopping.step(val_loss)
+            # if early_stopping.early_stop:
+            #     break
             
         ### Save best epoch weight file.
         if val_acc > best_miou:
