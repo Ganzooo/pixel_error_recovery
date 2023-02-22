@@ -1,7 +1,7 @@
 name:         'adam'
 lr:            0.0005
 scheduler:    'CosineAnnealingWarmRestarts'
-min_lr:        0.00001
+min_lr:        0.00000001
 warmup_epochs: 1
-t0_cycle : 1
-t_mult   : 0
+t0_cycle : 8
+t_mult   : 2

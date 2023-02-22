@@ -28,7 +28,7 @@ def get_scheduler(cfg, optimizer):
         scheduler = lr_scheduler.CosineAnnealingLR(optimizer,T_max = _T_max, 
                                                    eta_min=cfg.optimizer.min_lr)
     elif cfg.optimizer.scheduler == 'CosineAnnealingWarmRestarts':
-        scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer,T_0 = _T_0, T_mult=2,
+        scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer,T_0 = _T_0, T_mult=_T_mult,
                                                              eta_min=cfg.optimizer.min_lr)
     elif cfg.optimizer.scheduler == 'ReduceLROnPlateau':
         scheduler = lr_scheduler.ReduceLROnPlateau(optimizer,
