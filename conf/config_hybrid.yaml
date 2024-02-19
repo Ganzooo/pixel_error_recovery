@@ -26,7 +26,7 @@ train_config:
   data_repeat: 2
   data_augment: 1
   start_epoch: 0
-  epochs: 400
+  epochs: 200
   log_every: 100
   test_every: 5
   log_path: "./experiments"

@@ -38,10 +38,10 @@ You can set all Parameters in ***./config/config.yaml***
 cd pixel_error_recovery
 
 ## If you set all settings correct
-python train.py
+python train_hybrid.py
 
 ## If you want to change optimizer, batch size and epoch from argument
-python train.py optimizer=sgd train_config.batch_size=1024 train_config.epochs=1000
+python train_hybrid.py optimizer=sgd train_config.batch_size=1024 train_config.epochs=1000
 
 ## For Test
 python test.py
