@@ -1,8 +1,8 @@
 # Baseline Trainer Code for Pixel Error Detection + Pixel recovery
 An older version implemented based on tradition method placed in legacy folder.
 
-The following is based Deep learning method with Unet+Resnet version implemented by us.
-![alt text](https://github.com/Ganzooo/pixel_error_recovery/blob/main/data/unet_resnet_architecture.png)
+The following is based Deep learning method with Hybrid version implemented by us.
+![alt text](https://github.com/Ganzooo/pixel_error_recovery/blob/main/data/lightweight_model_hybrid_architecture.png)
 
 ### Dependencies & Installation
 
@@ -49,6 +49,7 @@ python test.py
 
 ### Result
 Validation result image, Best weight, Last weight and log files saved in this ***./output/{DATE_of_TODAY}/{Last_folder}*** folder.
+
 
 - (a) GT error image index,           (b) Input image with error pixel          (c) Pred error image            (d) Recovered image
 ![alt text](https://github.com/Ganzooo/pixel_error_recovery/blob/main/data/result_img_gt_pred.jpg)
