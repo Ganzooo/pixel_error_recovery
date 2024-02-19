@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchsummary import summary as summary_
-#from source.utils.media_filter_torch import MedianPool2d
+from source.utils.media_filter_torch import MedianPool2d
 
 class Conv3X3(nn.Module):
     def __init__(self, inp_planes, out_planes, act_type='relu', use_bn=False):

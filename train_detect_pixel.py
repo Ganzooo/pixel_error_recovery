@@ -93,9 +93,6 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 optimizer.step()
                 optimizer.zero_grad()
                 
-            if scheduler is not None:
-                scheduler.step()
-                
             epoch_loss.update(loss.item(), batch_size)
             
             mem = torch.cuda.memory_reserved() / 1E9 if torch.cuda.is_available() else 0
@@ -140,8 +137,9 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 temp0 = np.concatenate((_gt, _img, _pred, rec_img),axis=1)
                 save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'),temp0.astype(np.uint8), color_domain='rgb')
                 
-            #if cfg.train_config.debug and step < 10:
-    
+    if scheduler is not None:
+        scheduler.step()
+        
     if cfg.train_config.wandb:
         # Log the metrics
         wandb.log({"train/Loss": epoch_loss.avg,  

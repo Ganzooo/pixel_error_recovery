@@ -101,6 +101,9 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 optimizer.step()
                 optimizer.zero_grad()
                 
+            if scheduler is not None:
+                scheduler.step()
+                
             epoch_loss.update(loss.item(), batch_size)
             det_loss.update(_det_loss.item(), batch_size)
             rec_loss.update(_rec_loss.item(), batch_size)
@@ -146,9 +149,6 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 temp0 = np.concatenate((_gt, _img, _pred),axis=1)
                 save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'),temp0.astype(np.uint8), color_domain='rgb')
     
-    if scheduler is not None:
-        scheduler.step()
-                
     if cfg.train_config.wandb:
         # Log the metrics
         wandb.log({"train/Loss": epoch_loss.avg,  
@@ -344,7 +344,6 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
     stat_dict = utils_sr.get_stat_dict()
 
     early_stopping = EarlyStopping(tolerance=3, verbose=False)
-    wandb.watch(model, criterion=criterion, log='all')
     
     for epoch in range(cfg.train_config.start_epoch, num_epochs + 1):
         val_acc = 0
@@ -403,7 +402,7 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
 @hydra.main(config_path="conf", config_name="config_hybrid")
 def train(cfg : DictConfig) -> None:
     set_seed()
-
+    
     device = None
     if cfg.train_config.gpu_id >= 0 and torch.cuda.is_available():
         print("use cuda & cudnn for acceleration!")

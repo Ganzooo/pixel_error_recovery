@@ -18,6 +18,7 @@ from source.dataset.sr_dataset import SrDataSet
 def get_dataset(cfg):
     train_dataloaders = []
     valid_dataloaders = []
+
     
     if cfg.train_config.mode == 'denoise':
         noiseDataTrain_all = DenoiseDataSet(cfg.dataset.noised_img_path_all, cfg.dataset.gt_img_path_all, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
