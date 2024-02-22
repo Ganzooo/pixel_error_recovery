@@ -21,10 +21,14 @@ from source.utils.general import EarlyStopping
 import source.utils.utils_sr
 from statistics import mean, median
 
+import logging
 import hydra
 from omegaconf import DictConfig
 from sklearn.metrics import accuracy_score
 from skimage.metrics import peak_signal_noise_ratio as psnr_calc
+
+import warnings
+warnings.filterwarnings(action='ignore')
 
 # For colored terminal text
 from colorama import Fore, Back, Style
@@ -62,7 +66,6 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
         
         pbar = tqdm(enumerate(dataloader), total=len(dataloader), desc='Train {}:'.format(name))
         for step, (data) in pbar:
-            
             use_mask_loss = cfg.train_config.use_masked_loss
             if use_mask_loss:
                 _image_patch, _gt_patch, _idx, _fname, _org_img, _mask = data    
@@ -72,6 +75,23 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 _image_patch, _gt_patch, _org_img = _image_patch.to(device), _gt_patch.to(device), _org_img.to(device)
                 
             batch_size = _image_patch.size(0)
+            
+            if epoch < 5:
+                model.backbonePR.required_grad = False
+                for param in model.backbonePR.children():
+                    param.required_grad = False
+                    
+                model.trasitionPR.required_grad = False
+                for param in model.trasitionPR.children():
+                    param.required_grad = False
+            else: 
+                model.backbonePR.required_grad = True
+                for param in model.backbonePR.children():
+                    param.required_grad = True
+                
+                model.trasitionPR.required_grad = True
+                for param in model.trasitionPR.children():
+                    param.required_grad = True
             
             if cfg.train_config.mixed_pred:
                 ###Use Unscaled Gradiendts instead of 
@@ -100,9 +120,6 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
-                
-            if scheduler is not None:
-                scheduler.step()
                 
             epoch_loss.update(loss.item(), batch_size)
             det_loss.update(_det_loss.item(), batch_size)
@@ -156,6 +173,9 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                    "train/rec_Loss": rec_loss.avg,  
                "train/LR":scheduler.get_last_lr()[0]})
         
+    if scheduler is not None:
+        scheduler.step()
+                
     stat_dict['losses'].append(epoch_loss.avg)
     return epoch_loss.avg, stat_dict
     
@@ -225,7 +245,7 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 
                     if cfg.train_config.save_img_rec:
                         #fname = str(name) + '_munster_' + str(int(_idx[b])).zfill(6) + '_000019_leftImg8bit_recover.png'
-                        fname = os.path.basename(_fname[b])
+                        fname = os.path.basename(_fname[b])[:-4] + ".jpg"
                         save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), _rec.numpy().astype(np.uint8), color_domain='rgb')
                     
                         #with open(os.path.join(dirPath,"result.csv"), "a") as file:

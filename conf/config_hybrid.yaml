@@ -20,10 +20,10 @@ train_config:
   db_split: False
 
   ## parameters for model training
-  patch_size: 256
+  patch_size: 128 #256
   batch_size: 16
   batch_size_val: 5
-  data_repeat: 2
+  data_repeat: 1
   data_augment: 1
   start_epoch: 0
   epochs: 200
@@ -45,4 +45,4 @@ train_config:
   fsize: 2
   use_masked_loss: False
 losses:
-  name:         'bootstrapped_cross_entropy2d_hybrid_l1'
+  name:         'bootstrapped_cross_entropy2d_hybrid_l2'

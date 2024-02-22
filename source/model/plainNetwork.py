@@ -155,6 +155,62 @@ class plainRP(nn.Module):
         y = self.seghead(y)
         return y
 
+class plainHYBRID02(nn.Module):
+    def __init__(self, module_nums=4, channel_nums=32, num_class=2, act_type='relu', colors=3, use_bn_det=True, use_bn_rec=True, rec_mode = True):
+        super(plainHYBRID02, self).__init__()
+        self.module_nums = module_nums
+        self.channel_nums = channel_nums
+        self.colors = colors
+        self.act_type = act_type
+        self.backbone = None
+        self.upsampler = None
+        self.use_bn_det = use_bn_det
+        self.use_bn_rec = use_bn_rec
+        self.num_class = num_class
+        self.rec_mode = rec_mode
+
+        backbonePD = []
+        backbonePD += [Conv3X3(inp_planes=self.colors, out_planes=self.channel_nums, act_type=self.act_type, use_bn=self.use_bn_det)]
+        for _ in range(self.module_nums):
+            backbonePD += [Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums, act_type=self.act_type, use_bn=self.use_bn_det)]
+        backbonePD += [Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums//2, act_type='linear', use_bn=self.use_bn_det)]
+        self.backbonePD = nn.Sequential(*backbonePD)
+
+        self.headPD = torch.nn.Conv2d(self.channel_nums//2, self.num_class, kernel_size=1)
+        
+        
+        backbonePR = []
+        backbonePR += [Conv3X3(inp_planes=5, out_planes=self.channel_nums, act_type=self.act_type, use_bn=self.use_bn_rec)]
+        for _ in range(self.module_nums):
+            backbonePR += [Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums, act_type=self.act_type, use_bn=self.use_bn_rec)]
+        backbonePR += [Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums, act_type='linear', use_bn=self.use_bn_rec)]
+        self.backbonePR = nn.Sequential(*backbonePR)
+
+        self.trasitionPR = nn.Sequential(
+                            Conv3X3(inp_planes=self.channel_nums, out_planes=self.channel_nums//2, act_type=self.act_type, use_bn=self.use_bn_rec),
+                            Conv1X1(inp_planes=self.channel_nums//2, out_planes=self.colors, act_type=self.act_type, use_bn=self.use_bn_rec)
+        )
+            
+    def forward(self, x):
+        #y = self.backbone(x) + x
+        #_x = torch.cat([x, x, x, x, x, x, x, x, x], dim=1)
+        y = self.backbonePD(x) #+ _x
+        y = self.headPD(y)
+        
+        if self.rec_mode:
+            #msk = y.data.max(1)[1].squeeze(axis=0)
+            #msk = y.data.max(1)[1]
+            #mask = torch.cat([msk.unsqueeze(axis=1),msk.unsqueeze(axis=1),msk.unsqueeze(axis=1)],dim=1)
+            
+            #x_masked = torch.mul(x, mask)
+            x_masked = torch.cat([x,y],dim=1)
+            
+            y1 = self.backbonePR(x_masked)
+            y1 = self.trasitionPR(y1)
+            y_rec = y1    
+            return y, y_rec
+        return y, _
+
 class plainHYBRID(nn.Module):
     def __init__(self, module_nums=4, channel_nums=32, num_class=2, act_type='relu', colors=3, use_bn_det=True, use_bn_rec=True, rec_mode = True):
         super(plainHYBRID, self).__init__()
