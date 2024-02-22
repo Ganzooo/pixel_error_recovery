@@ -94,12 +94,12 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                     param.required_grad = True
             
             if cfg.train_config.mixed_pred:
+                optimizer.zero_grad()
                 ###Use Unscaled Gradiendts instead of 
                 ### https://pytorch.org/docs/stable/notes/amp_examples.html#amp-examples
                 with amp.autocast(enabled=True):
-                    _pred = model(_image_patch)
-                    _pred = torch.clamp(_pred, 0, 1)
-                    loss   = criterion(_pred, _gt_patch)    
+                    _pred, _rec = model(_image_patch)
+                    loss, _det_loss, _rec_loss = criterion(_pred, _gt_patch, _rec, _org_img)
                 scaler.scale(loss).backward()
                 
                 # Unscales the gradients of optimizer's assigned params in-place

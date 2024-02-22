@@ -41,6 +41,7 @@ train_config:
   mixed_pred: False
   ## hardware specification
   gpu_id: 1
+  num_workers: 8
   threads: 1
   wandb: 1
   fsize: 2

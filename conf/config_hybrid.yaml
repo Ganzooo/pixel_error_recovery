@@ -37,9 +37,10 @@ train_config:
   testmodelpath:  #'/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/last_epoch_hybrid_ml1.pt'
   pretrain: #'/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/last_epoch_hybrid_ml1.pt'
   resume: 
-  mixed_pred: False
+  mixed_pred: True
   ## hardware specification
   gpu_id: 0
+  num_workers: 8
   threads: 1
   wandb: 0
   fsize: 2
