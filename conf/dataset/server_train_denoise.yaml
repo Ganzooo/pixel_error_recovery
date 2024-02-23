@@ -8,9 +8,9 @@
 # gt_img_path_val_all: '/dataset/SR/DIV2K/DIV2K_valid_HR/'
 
 ### Train dataset.
-noised_img_path_all: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/all/'
-gt_img_path_all: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_train/'
+noised_img_path_all: '/server_storage/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/all/'
+gt_img_path_all: '/server_storage/datasets/DEFECTION_NOISE_PAPER/gt_train/'
 
 ### Val dataset.
-noised_img_path_val_all: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/all/'
-gt_img_path_val_all: '/dataset/Cityscapes/DEFECTION_NOISE_PAPER/gt_val/'
+noised_img_path_val_all: '/server_storage/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/all/'
+gt_img_path_val_all: '/server_storage/datasets/DEFECTION_NOISE_PAPER/gt_val/'

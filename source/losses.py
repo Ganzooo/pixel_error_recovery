@@ -182,6 +182,8 @@ class bootstrapped_cross_entropy2d_ml2_hybrid(torch.nn.modules.loss._Loss):
 def get_criterion(cfg):
     if cfg.losses.name == 'l1':
         return nn.L1Loss()
+    elif cfg.losses.name == 'l2':
+        return nn.MSELoss()
     elif cfg.losses.name == 'CE':
         return nn.CrossEntropyLoss()
     if cfg.losses.name == 'BCEandTversky':

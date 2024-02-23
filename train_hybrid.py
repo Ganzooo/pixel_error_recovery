@@ -208,7 +208,11 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             
             _start_pixel_err = time.time()
             
-            _pred, _recBatch = model(_image_patch)
+            if cfg.train_config.mixed_pred:
+                with amp.autocast(enabled=True):
+                    _pred, _recBatch = model(_image_patch)
+            else: 
+                _pred, _recBatch = model(_image_patch)
             val_loss, _, _ = criterion(_pred, _gt_patch, _recBatch, _image_patch)
             val_loss_meter.update(val_loss.item(), cfg.train_config.batch_size_val)
             _end_pixel_err = time.time()

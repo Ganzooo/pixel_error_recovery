@@ -1,0 +1,4 @@
+name: 'UNetRes' 
+in_channel: 3
+module_num: 4
+channels: [64, 128, 256, 512]

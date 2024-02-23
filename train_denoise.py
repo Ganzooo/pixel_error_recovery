@@ -25,6 +25,8 @@ import hydra
 from omegaconf import DictConfig
 from sklearn.metrics import accuracy_score
 from skimage.metrics import peak_signal_noise_ratio as psnr_calc
+from skimage.metrics import structural_similarity as ssim_calc
+from pytorch_msssim import ssim
 
 # For colored terminal text
 from colorama import Fore, Back, Style
@@ -62,18 +64,19 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
         
         pbar = tqdm(enumerate(dataloader), total=len(dataloader), desc='Train {}:'.format(name))
         for step, (data) in pbar:
-            
+
             _image_patch, _gt_patch, _idx, _fname = data
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
                 
             batch_size = _image_patch.size(0)
             
             if cfg.train_config.mixed_pred:
+                optimizer.zero_grad()
                 ###Use Unscaled Gradiendts instead of 
                 ### https://pytorch.org/docs/stable/notes/amp_examples.html#amp-examples
                 with amp.autocast(enabled=True):
                     _pred = model(_image_patch)
-                    _pred = torch.clamp(_pred, 0, 1)
+                    #_pred = torch.clamp(_pred, 0, 1)
                     loss   = criterion(_pred, _gt_patch)    
                 scaler.scale(loss).backward()
                 
@@ -96,9 +99,6 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 optimizer.step()
                 optimizer.zero_grad()
                 
-            if scheduler is not None:
-                scheduler.step()
-                
             epoch_loss.update(loss.item(), batch_size)
             
             mem = torch.cuda.memory_reserved(device=cfg.train_config.gpu_id) / 1E9 if torch.cuda.is_available() else 0
@@ -109,7 +109,7 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                             lr=f'{current_lr:0.5f}', 
                             gpu_mem=f'{mem:0.2f} GB')
             
-            if cfg.train_config.img_save_val and step < 100: 
+            if cfg.train_config.img_save_val and step < 5: 
                 pred = _pred.data.cpu().numpy()
                 gt = _gt_patch.data.cpu().numpy() 
                 img = _image_patch.data.cpu().numpy() 
@@ -128,21 +128,21 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
         # Log the metrics
         wandb.log({"train/Loss": epoch_loss.avg,  
                "train/LR":scheduler.get_last_lr()[0]})
-        
+    if scheduler is not None:
+        scheduler.step()
+                
     stat_dict['losses'].append(epoch_loss.avg)
     return epoch_loss.avg, stat_dict
     
 @torch.no_grad()
 def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict, run_log_wandb):
     model.eval()
-    
-    #avg_ssim = AverageMeter()
+
     count = 0
-    test_log = ""
     name = 'PER'
     
-    acc_all = []
     psnr_all = []
+    ssim_all = []
     for _dl in dataloader:
         name = _dl['name']
         dataloader = _dl['dataloader']
@@ -151,8 +151,8 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
         pbar = tqdm(dataloader, total=len(dataloader), desc='Valid: {}'.format(name))
         count = 0
         
-        acc_db = []
         psnr_db = []
+        ssim_db = []
         dirPath = "./result_image/val/{}/".format(name)
                  
         for _image_patch, _gt_patch, _idx, _fname in pbar:
@@ -182,7 +182,9 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
 
                 psnr = psnr_calc(pred.cpu().numpy().astype(np.uint8),gt.cpu().numpy().astype(np.uint8))
                 psnr_db.append(psnr)
-
+    
+                _ssim = ssim(pred.unsqueeze(axis=0),gt.unsqueeze(axis=0), size_average=True)  
+                ssim_db.append(_ssim.cpu().numpy().item())
                 _end_pixel_rec = time.time()
             
                 if cfg.train_config.save_img_rec:
@@ -192,7 +194,10 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
         
         if cfg.train_config.pixel_recovery:
             print('PSNR mean({}) = {}'.format(name, mean(psnr_db)))    
+            print('SSIM mean({}) = {}'.format(name, mean(ssim_db)))    
+            
             psnr_all.append(mean(psnr_db))
+            ssim_all.append(mean(ssim_db))
             
         running_metrics_val.reset()    
         
@@ -201,10 +206,11 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             wandb.log({
                 "val/Valid Loss ({})".format(name): val_loss_meter.avg,
                 "val/Valid PSNR {} - ".format(name): mean(psnr_db),
+                "val/Valid SSIM {} - ".format(name): mean(ssim_db),
                 })
    
     print("Val Loss:::", val_loss_meter.avg)
-    return mean(psnr_db), val_loss_meter.avg
+    return mean(psnr_db), mean(ssim_db), val_loss_meter.avg
 
 def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs, train_loader, valid_loader, run_log_wandb):
     # To automatically log gradients
@@ -243,7 +249,7 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
     stat_dict = utils_sr.get_stat_dict()
 
     early_stopping = EarlyStopping(tolerance=cfg.train_config.early_stop, verbose=False)
-    wandb.watch(model, criterion=criterion, log='all')
+    #wandb.watch(model, criterion=criterion, log='all')
     
     for epoch in range(cfg.train_config.start_epoch, num_epochs + 1):
         val_pnsr = 0
@@ -254,7 +260,7 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
                                     device=device, epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
 
         if (epoch % cfg.train_config.test_every) == 0:
-            val_pnsr, val_loss = valid_one_epoch(cfg, model, valid_loader, criterion,
+            val_pnsr, val_ssim, val_loss = valid_one_epoch(cfg, model, valid_loader, criterion,
                                         device=device,
                                         epoch=epoch, stat_dict=stat_dict, run_log_wandb=run_log_wandb)
             # Early Stopping
@@ -269,10 +275,12 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
             sys.stdout.flush()
 
             best_psnr                           = val_pnsr
+            best_ssim                           = val_ssim
             best_epoch                          = epoch
             best_val_loss                       = val_loss
             if cfg.train_config.wandb:
                 wandb.summary["Best PSNR"]       = val_pnsr
+                wandb.summary["Best SSIM"]       = val_ssim
                 wandb.summary["Best Epoch"]     = best_epoch
                 wandb.summary["Best Val Loss"]  = best_val_loss
 
@@ -296,7 +304,8 @@ def run_training(cfg, model, optimizer, scheduler, criterion, device, num_epochs
     time_elapsed = end - start
     print('Training complete in {:.0f}h {:.0f}m {:.0f}s'.format(
         time_elapsed // 3600, (time_elapsed % 3600) // 60, (time_elapsed % 3600) % 60))
-    print("Best ACC Score: {:.4f}".format(best_psnr))
+    print("Best PSNR Score: {:.4f}".format(best_psnr))
+    print("Best SSIM Score: {:.4f}".format(best_ssim))
     return model
 
 @hydra.main(config_path="conf", config_name="config_denoise")

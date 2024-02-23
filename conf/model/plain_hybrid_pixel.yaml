@@ -1,4 +1,4 @@
-name: 'plainHYBRID02' 
+name: 'plainHYBRID' 
 num_module: 6
 activation: 'gelu'
 channel_nums: 64
