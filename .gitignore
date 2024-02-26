@@ -142,5 +142,6 @@ result_image/*
 wandb/*
 dataset/*
 
+.idea/
 multirun/*
 test/*
