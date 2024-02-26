@@ -1,7 +1,8 @@
-name: 'plainHYBRID'
+name: 'shuffleHYBRID'
 num_module: 4
 activation: 'gelu'
 channel_nums: 32
 use_bn_det: True
 use_bn_rec: False
 rec_mode: True
+downscale_size: 2

@@ -37,31 +37,19 @@ class DenoiseDataSet(data.Dataset):
         self.gtName = []
         self.imageOrgName = []
         self.org_path = hydra.utils.get_original_cwd()
-        self.denoise_db_type = 'Cityscape' # 'Original'
+
         _imgPathNoise = sorted(glob.glob(os.path.join(self.org_path,self.image_folder) + '*.png'))
-        #_imgPathGT = sorted(glob.glob(os.path.join(self.org_path,self.gt_folder) + '*.png'))
-        
-        if self.denoise_db_type == 'Original':
-            assert len(_imgPathNoise) == len(_imgPathGT)
-            for idx, (_imgNameHR, _imgNameLR) in enumerate(zip(_imgPathNoise, _imgPathGT)):
-                self.imageName.append(_imgNameHR)
-                self.gtName.append(_imgNameLR)
-                _name = os.path.basename(_imgNameHR).split('_')
-                # if _name[1] == 'pr':
-                #     base_name = _name[4] + '_' + _name[5] + '_' + _name[6] + '_' + _name[7]
-                # else: 
-                #     base_name = _name[3] + '_' + _name[4] + '_' + _name[5] + '_' + _name[6]
-                #self.imageOrgName.append(os.path.join(os.path.join(self.org_path,self.image_org_folder),base_name))
-        else: 
-            for idx, _imgNameHR in enumerate(_imgPathNoise):
-                self.imageName.append(_imgNameHR)
-                _name = os.path.basename(_imgNameHR).split('_')
-                if _name[1] == 'pr':
-                    base_name = _name[4] + '_' + _name[5] + '_' + _name[6] + '_' + _name[7]
-                else: 
-                    base_name = _name[3] + '_' + _name[4] + '_' + _name[5] + '_' + _name[6]
-                self.gtName.append(os.path.join(os.path.join(self.org_path,self.gt_folder),base_name))
-            assert len(self.imageName) == len(self.gtName)
+        _imgPathGT = sorted(glob.glob(os.path.join(self.org_path,self.gt_folder) + '*.png'))
+        assert len(_imgPathNoise) == len(_imgPathGT)
+        for idx, (_imgNameHR, _imgNameLR) in enumerate(zip(_imgPathNoise, _imgPathGT)):
+            self.imageName.append(_imgNameHR)
+            self.gtName.append(_imgNameLR)
+            _name = os.path.basename(_imgNameHR).split('_')
+            # if _name[1] == 'pr':
+            #     base_name = _name[4] + '_' + _name[5] + '_' + _name[6] + '_' + _name[7]
+            # else: 
+            #     base_name = _name[3] + '_' + _name[4] + '_' + _name[5] + '_' + _name[6]
+            #self.imageOrgName.append(os.path.join(os.path.join(self.org_path,self.image_org_folder),base_name))
 
         self.nums_trainset = len(_imgPathNoise)
 

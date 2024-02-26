@@ -1,8 +1,12 @@
+hydra:
+  sweep:
+    dir: multirun
+    subdir: ${hydra.job.override_dirname}
+
 defaults:
-    -   dataset: train_grb_local_all #train_grb_all #train_grb #train_grb_all #demo #dataset_gray #main #server_train_rgb
+    -   dataset: train_grb_server_all #train_grb_all #train_grb #train_grb_all #demo #dataset_gray #main #server_train_rgb
     -   model: plain_detection_pixel #plain_detection_pixel #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
     -   optimizer: adam  #adam
-#- hydra/sweeper: optuna #Optuna hyperparamater optimization program
 
 train_config:
     scale: 1
@@ -21,8 +25,8 @@ train_config:
 
     ## parameters for model training
     patch_size: 128
-    batch_size: 64
-    batch_size_val: 5
+    batch_size: 128
+    batch_size_val: 16
     data_repeat: 1
     data_augment: 1
     start_epoch: 0
@@ -41,8 +45,9 @@ train_config:
     mixed_pred: False
     ## hardware specification
     gpu_id: 0
-    threads: 1
-    wandb: False
+    train_threads: 32
+    val_threads: 16
+    wandb: 1
     fsize: 2
     use_masked_loss: False
     recovery_mode: True

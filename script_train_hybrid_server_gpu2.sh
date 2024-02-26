@@ -1,1 +1,1 @@
-python train_hybrid.py train_config.description=hybrid_ep500_l1_lr5e-4_depth8 train_config.epochs=500 train_config.gpu_id=2 train_config.batch_size=32 optimizer.lr=0.0005 model.num_module=8
+python train_detect_pixel.py --multirun model.channel_nums=48,64,128 train_config.gpu_id=2

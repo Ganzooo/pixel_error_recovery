@@ -115,7 +115,7 @@ class bootstrapped_cross_entropy2d_l2_hybrid(torch.nn.modules.loss._Loss):
         self.detection = bootstrapped_cross_entropy2d()
         self.recovery = torch.nn.MSELoss()
         self.w1 = 1
-        self.w2 = 2
+        self.w2 = 1
         
     def forward(self, input, target, input_rec, target_rec):
         n, c, h, w = input.size()
@@ -182,8 +182,6 @@ class bootstrapped_cross_entropy2d_ml2_hybrid(torch.nn.modules.loss._Loss):
 def get_criterion(cfg):
     if cfg.losses.name == 'l1':
         return nn.L1Loss()
-    elif cfg.losses.name == 'l2':
-        return nn.MSELoss()
     elif cfg.losses.name == 'CE':
         return nn.CrossEntropyLoss()
     if cfg.losses.name == 'BCEandTversky':

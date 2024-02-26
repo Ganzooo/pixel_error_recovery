@@ -8,11 +8,13 @@ import datetime
 import os
 import sys
 
+
 def calc_psnr(sr, hr, max_value=255):
     diff = (sr - hr) / max_value
-    mse  = diff.pow(2).mean()
-    psnr = -10 * math.log10(mse)                    
+    mse = diff.pow(2).mean()
+    psnr = -10 * math.log10(mse)
     return float(psnr)
+
 
 def calc_ssim(sr, hr):
     # def ssim(
@@ -28,7 +30,8 @@ def calc_ssim(sr, hr):
     # )
     ssim_val = ssim(sr, hr, data_range=255, size_average=True)
     return float(ssim_val)
-    
+
+
 def ndarray2tensor(ndarray_hwc):
     ndarray_chw = np.ascontiguousarray(ndarray_hwc.transpose((2, 0, 1)))
     tensor = torch.from_numpy(ndarray_chw).float()
@@ -49,14 +52,17 @@ def cur_timestamp_str():
 
 class ExperimentLogger(object):
     def __init__(self, filename='default.log', stream=sys.stdout):
-	    self.terminal = stream
-	    self.log = open(filename, 'a')
+        self.terminal = stream
+        self.log = open(filename, 'a')
+
     def write(self, message):
-	    self.terminal.write(message)
-	    self.log.write(message)
+        self.terminal.write(message)
+        self.log.write(message)
+
     def flush(self):
         self.terminal.flush()
         self.log.flush()
+
 
 def get_stat_dict():
     stat_dict = {
@@ -206,9 +212,10 @@ def get_stat_dict():
                 'epoch': 0
             },
         },
-                
+
     }
     return stat_dict
+
 
 if __name__ == '__main__':
     timestamp = cur_timestamp_str()
