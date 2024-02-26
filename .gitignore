@@ -141,3 +141,6 @@ result_gray/*
 result_image/*
 wandb/*
 dataset/*
+
+multirun/*
+test/*
