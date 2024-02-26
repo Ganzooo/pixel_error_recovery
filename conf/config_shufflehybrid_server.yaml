@@ -1,16 +1,16 @@
 defaults:
-    -   dataset: train_grb_local_all #train_grb_all #train_grb #train_grb_all #demo #dataset_gray #main #server_train_rgb
-    -   model: plain_detection_pixel #plain_detection_pixel #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
+    -   dataset: train_grb_server_all #server_train_rgb_all #demo_all #train_grb_all #train_grb #train_grb_all #demo #dataset_gray #main #server_train_rgb
+    -   model: shuffle_hybrid_pixel #UNetWithResnet50Hybrid #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
     -   optimizer: adam  #adam
 #- hydra/sweeper: optuna #Optuna hyperparamater optimization program
 
 train_config:
     scale: 1
     colors: 3
-    mode: 'Hybrid'
+    mode: 'hybrid'
     seed: 101
     debug: False #set debug=False for Full Training
-    description: "local_train"
+    description: "server_hybrid"
     comment: ${model.name}_ep_${train_config.epochs}_op_${optimizer.name}_lr_${optimizer.lr}_size_${train_config.patch_size}_loss_${losses.name}_des_${train_config.description}
     device: "cuda"
     img_save_val: True
@@ -20,31 +20,30 @@ train_config:
     db_split: False
 
     ## parameters for model training
-    patch_size: 128
-    batch_size: 64
+
+    patch_size: 256
+    batch_size: 16
     batch_size_val: 5
-    data_repeat: 1
+    data_repeat: 2
     data_augment: 1
     start_epoch: 0
     epochs: 200
     log_every: 100
     test_every: 5
     log_path: "./experiments"
-    lr: 0.0005
     store_in_ram: 0
     nclass: 2
     ignore_index: 250
     #pretrain: '/workspace/09_CHALLENGE/ECCV/ECBSR/chekpoint/model_x3_75.pt'
-#    testmodelpath: '/mnt/data_main/NETWORK/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/best_epoch_DP.pt'
-    pretrain: #'/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/best_epoch_DP.pt'
+    testmodelpath:  #'/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/last_epoch_hybrid_ml1.pt'
+    pretrain: #'/workspace/11_IMAGE_DENOISE/pixel_error_recovery/checkpoint/last_epoch_hybrid_ml1.pt'
     resume:
     mixed_pred: False
     ## hardware specification
     gpu_id: 0
     threads: 1
-    wandb: False
+    wandb: 0
     fsize: 2
     use_masked_loss: False
-    recovery_mode: True
 losses:
-    name: 'bootstrapped_cross_entropy2d'
+    name: 'bootstrapped_cross_entropy2d_hybrid_l1'

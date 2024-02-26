@@ -3,3 +3,4 @@ num_module: 4
 activation: 'relu'
 channel_nums: 32
 use_bn: True
+rec_mode: True
