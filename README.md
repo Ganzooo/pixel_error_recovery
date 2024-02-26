@@ -52,3 +52,20 @@ Validation result image, Best weight, Last weight and log files saved in this **
 
 - (a) GT error image index,           (b) Input image with error pixel          (c) Pred error image            (d) Recovered image
 ![alt text](https://github.com/Ganzooo/pixel_error_recovery/blob/main/data/result_img_gt_pred.jpg)
+
+### Flops, MACs
+**install**
+```commandline
+pip install fvcore
+pip install thop
+```
+**how to use**
+```python
+from fvcore.nn import FlopCountAnalysis as fca
+from thop import profile
+
+inp = torch.randn(input_tensor_shape)
+
+macs, params = profile(model, inputs=(inp, ))
+flops = fca(model, inp)
+```
