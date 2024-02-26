@@ -54,6 +54,8 @@ Validation result image, Best weight, Last weight and log files saved in this **
 ![alt text](https://github.com/Ganzooo/pixel_error_recovery/blob/main/data/result_img_gt_pred.jpg)
 
 ### Flops, MACs
+- check [test.py](https://github.com/Ganzooo/pixel_error_recovery/blob/moon-test/test.py#L310)  
+
 **install**
 ```commandline
 pip install fvcore
