@@ -80,11 +80,11 @@ def get_dataset(cfg):
         valid_dataloaders += [{'name': 'col1', 'dataloader': DataLoader(dataset=noiseDataValid_col1, batch_size=cfg.train_config.batch_size_val, shuffle=False)}]
         valid_dataloaders += [{'name': 'col2', 'dataloader': DataLoader(dataset=noiseDataValid_col2, batch_size=cfg.train_config.batch_size_val, shuffle=False)}]
     else: 
-        noiseDataTrain_all = CustomDataSet(cfg.dataset.noised_img_path_all, cfg.dataset.gt_img_path_all, cfg.dataset.img_org_path_all, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, 
-        patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram, use_mask_loss=cfg.train_config.use_masked_loss)
+        # noiseDataTrain_all = CustomDataSet(cfg.dataset.noised_img_path_all, cfg.dataset.gt_img_path_all, cfg.dataset.img_org_path_all, train=True, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors,
+        # patch_size=cfg.train_config.patch_size, repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram, use_mask_loss=cfg.train_config.use_masked_loss)
         noiseDataValid_all = CustomDataSet(cfg.dataset.noised_img_path_val_all, cfg.dataset.gt_img_path_val_all, cfg.dataset.img_org_path_val_all, train=False, augment=cfg.train_config.data_augment, scale=cfg.train_config.scale, colors=cfg.train_config.colors, patch_size=cfg.train_config.patch_size, 
             repeat=cfg.train_config.data_repeat, store_in_ram=cfg.train_config.store_in_ram, use_mask_loss=cfg.train_config.use_masked_loss)
         
-        train_dataloaders += [{'name': 'all', 'dataloader': DataLoader(dataset=noiseDataTrain_all, num_workers=cfg.train_config.train_threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
+        # train_dataloaders += [{'name': 'all', 'dataloader': DataLoader(dataset=noiseDataTrain_all, num_workers=cfg.train_config.train_threads, batch_size=cfg.train_config.batch_size, shuffle=True, pin_memory=True, drop_last=True)}]
         valid_dataloaders += [{'name': 'all', 'dataloader': DataLoader(dataset=noiseDataValid_all, num_workers=cfg.train_config.val_threads, batch_size=cfg.train_config.batch_size_val, shuffle=False)}]
     return train_dataloaders, valid_dataloaders
