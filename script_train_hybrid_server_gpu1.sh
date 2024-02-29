@@ -1,2 +1,2 @@
-python hydra.sweep.dir=trained/activation hydra.sweep.subdir='relu' train_detect_pixel.py --multirun model.activation='relu' train_config.gpu_id=1
-python hydra.sweep.dir=trained/activation hydra.sweep.subdir='gelu' train_detect_pixel.py --multirun model.activation='gelu' train_config.gpu_id=1
+python train_detect_pixel.py --multirun hydra.sweep.dir=trained/activation hydra.sweep.subdir='relu' model.activation='relu' train_config.gpu_id=1
+python train_detect_pixel.py --multirun hydra.sweep.dir=trained/activation hydra.sweep.subdir='gelu' model.activation='gelu' train_config.gpu_id=1

@@ -139,6 +139,7 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
 
                 temp0 = np.concatenate((_gt, _img, _pred, rec_img), axis=1)
                 save_img(os.path.join(dirPath, str(epoch), fname + '.jpg'), temp0.astype(np.uint8), color_domain='rgb')
+                print('saved image')
 
     if scheduler is not None:
         scheduler.step()
