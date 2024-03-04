@@ -5,7 +5,7 @@ hydra:
 
 defaults:
     -   dataset: train_grb_server_all #train_grb_all #train_grb #train_grb_all #demo #dataset_gray #main #server_train_rgb
-    -   model: ps_detection_pixel #plain_detection_pixel #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
+    -   model: plain_detection_pixel #plain_detection_pixel #UNetWithResnet50Hybrid #UNetWithResnet50Encoder #ecbsr #fsrcnn
     -   optimizer: adam  #adam
 
 train_config:

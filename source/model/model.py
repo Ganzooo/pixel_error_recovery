@@ -25,11 +25,11 @@ def get_model(cfg, device):
             device)
     elif cfg.model.name == 'plainDP':
         model = plainDP(module_nums=cfg.model.num_module, channel_nums=cfg.model.channel_nums,
-                        num_class=cfg.train_config.nclass, act_type='relu', colors=cfg.train_config.colors,
+                        num_class=cfg.train_config.nclass, act_type=cfg.model.activation, colors=cfg.train_config.colors,
                         use_bn=cfg.model.use_bn)
     elif cfg.model.name == 'plainDP_ps':
         model = plainDP_ps(module_nums=cfg.model.num_module, channel_nums=cfg.model.channel_nums,
-                           num_class=cfg.train_config.nclass, act_type='relu', colors=cfg.train_config.colors,
+                           num_class=cfg.train_config.nclass, act_type=cfg.model.activation, colors=cfg.train_config.colors,
                            use_bn=cfg.model.use_bn, ps_scale=cfg.model.ps_scale)
     elif cfg.model.name == 'plainRP':
         model = plainRP(module_nums=cfg.model.num_module, channel_nums=cfg.model.channel_nums, act_type='relu',

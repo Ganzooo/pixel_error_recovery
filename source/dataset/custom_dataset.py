@@ -45,6 +45,8 @@ class CustomDataSet(data.Dataset):
 
         _imgPath = [sorted(glob.glob(os.path.join(self.org_path, self.image_folder) + '*.png'))[0]] * 1000
         _imgPathGT = [sorted(glob.glob(os.path.join(self.org_path, self.gt_folder) + '*.png'))[0]] * 1000
+        # _imgPath = sorted(glob.glob(os.path.join(self.org_path, self.image_folder) + '*.png'))
+        # _imgPathGT = sorted(glob.glob(os.path.join(self.org_path, self.gt_folder) + '*.png'))
         assert len(_imgPath) == len(_imgPathGT)
         for idx, (_imgNameHR, _imgNameLR) in enumerate(zip(_imgPath, _imgPathGT)):
             self.imageName.append(_imgNameHR)
