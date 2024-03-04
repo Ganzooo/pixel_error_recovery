@@ -1,6 +1,7 @@
-name: 'plainDP'
+name: 'plainDP_ps'
 num_module: 4
 activation: 'relu'
 channel_nums: 32
 use_bn: True
 rec_mode: True
+ps_scale: 2

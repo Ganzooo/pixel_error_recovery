@@ -170,8 +170,6 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
     inp = None
 
     total_latency = 0
-    detection_latency = 0
-    recovery_latency = 0
     warmup_cnt = 0
 
     for _dl in dataloader:
@@ -188,7 +186,7 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
 
         if not os.path.exists(os.path.join(dirPath, "result.csv")):
             with open(os.path.join(dirPath, "result.csv"), "w") as file:
-                file.write("name, acc, psnr, ssim, total, detection, recovery \n")
+                file.write("name, acc, psnr, ssim, total\n")
 
         acc_db = []
         psnr_db = []
@@ -203,6 +201,8 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             if warmup_cnt > 100:
                 break
 
+        cnt = 0
+
         for step, data in pbar:
             _image_patch, _gt_patch, _idx, _fname, _imageOrg_patch = data
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
@@ -210,6 +210,9 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             _start_pixel_err = time.time()
             _pred, _rec_img = model(_image_patch)
             _end_pixel_err = time.time()
+            total_latency_ = _end_pixel_err - _start_pixel_err
+            total_latency += total_latency_
+
             count += _image_patch.size(0)
 
             if inp is None:
@@ -222,7 +225,6 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
 
                 ### Pred data
                 for b in range(_pred.shape[0]):
-                    _start_pixel_rec = time.time()
                     # pred = _pred.data.max(1)[1].squeeze(axis=0)
                     pred = _pred.data.max(1)[1][b]
                     # index = torch.where(pred==1)
@@ -236,7 +238,6 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
 
                     _imgRec = rec_img[b].permute(1, 2, 0).type(torch.uint8).cpu().numpy()
                     _imgOrg = _imageOrg_patch[b].numpy()
-                    _end_pixel_rec = time.time()
 
                     psnr = psnr_calc(_imgOrg, _imgRec)
                     psnr_db.append(psnr)
@@ -247,25 +248,16 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                     ssim = mean([ssim_R[0], ssim_G[0], ssim_B[0]])
                     ssim_db.append(ssim)
 
-                    total_latency_ = _end_pixel_rec - _start_pixel_err
-                    total_latency += total_latency_
-                    detection_latency_ = _end_pixel_err - _start_pixel_err
-                    detection_latency += detection_latency_
-                    recovery_latency_ = _end_pixel_rec - _start_pixel_rec
-                    recovery_latency += recovery_latency_
-
                 fname = os.path.basename(_fname[0])
 
                 if step % 100 == 0:
                     with open(os.path.join(dirPath, "result.csv"), "a") as file:
                         file.write(
-                            "{}, {:.4f}, {:.4f}, {:.4f}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname),
-                                                                                           acc_rec,
-                                                                                           psnr,
-                                                                                           ssim,
-                                                                                           total_latency_,
-                                                                                           detection_latency_,
-                                                                                           recovery_latency_))
+                            "{}, {:.6f}, {:.6f}, {:.6f}, {:.6f} \n".format(str(fname),
+                                                                           acc_rec,
+                                                                           psnr,
+                                                                           ssim,
+                                                                           total_latency_))
 
                     save_img(os.path.join(dirPath, str(epoch) + '_rec', fname), _imgRec, color_domain='rgb')
 
@@ -307,23 +299,20 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
     end_t = time.perf_counter()
     print("ALL Accuracy:::", mean(acc_all))
 
-    macs, params = profile(model, inputs=(inp, ))
+    macs, params = profile(model, inputs=(inp,))
     flops = fca(model, inp)
 
     with open(os.path.join(dirPath, "flops.txt"), "a") as file:
         file.write(f"macs: {macs} / params: {params}\n")
         file.write(f"flops: {flops.total()}\n{flops.by_module_and_operator()}")
 
-
     with open(os.path.join(dirPath, "result.csv"), "a") as file:
         file.write(
-            "{}, {:.4f}, {:.4f}, {:.4f}, {:.4f}, {:.4f}, {:.4f} \n".format('',
-                                                                           mean(acc_all),
-                                                                           mean(psnr_all),
-                                                                           mean(ssim_all),
-                                                                           total_latency / len(dataloader),
-                                                                           detection_latency / len(dataloader),
-                                                                           recovery_latency / len(dataloader)))
+            "{}, {:.6f}, {:.6f}, {:.6f}, {:.6f} \n".format('',
+                                                           mean(acc_all),
+                                                           mean(psnr_all),
+                                                           mean(ssim_all),
+                                                           total_latency / len(dataloader)))
 
     # print("FPS:{:.2f}".format(60/(end_t-start_t)))
     return mean(acc_all)
