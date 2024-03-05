@@ -1,2 +1,0 @@
-- model.num_module=8
-- train_config.testmodelpath=/workspace/pixel_error_recovery/models/m8_best_epoch.pt
