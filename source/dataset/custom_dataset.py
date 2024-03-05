@@ -44,19 +44,21 @@ class CustomDataSet(data.Dataset):
         self.org_path = hydra.utils.get_original_cwd()
 
         _imgPath = [sorted(glob.glob(os.path.join(self.org_path, self.image_folder) + '*.png'))[0]] * 1000
-        _imgPathGT = [sorted(glob.glob(os.path.join(self.org_path, self.gt_folder) + '*.png'))[0]] * 1000
+        _imgPathGT = [sorted(glob.glob(os.path.join(self.org_path, self.image_folder) + '*.png'))[0]] * 1000
+        # _imgPathGT = [sorted(glob.glob(os.path.join(self.org_path, self.gt_folder) + '*.png'))[0]] * 1000
         # _imgPath = sorted(glob.glob(os.path.join(self.org_path, self.image_folder) + '*.png'))
         # _imgPathGT = sorted(glob.glob(os.path.join(self.org_path, self.gt_folder) + '*.png'))
         assert len(_imgPath) == len(_imgPathGT)
         for idx, (_imgNameHR, _imgNameLR) in enumerate(zip(_imgPath, _imgPathGT)):
             self.imageName.append(_imgNameHR)
             self.gtName.append(_imgNameLR)
-            _name = os.path.basename(_imgNameHR).split('_')
-            if _name[1] == 'pr':
-                base_name = _name[4] + '_' + _name[5] + '_' + _name[6] + '_' + _name[7]
-            else:
-                base_name = _name[3] + '_' + _name[4] + '_' + _name[5] + '_' + _name[6]
-            self.imageOrgName.append(os.path.join(os.path.join(self.org_path, self.image_org_folder), base_name))
+            # _name = os.path.basename(_imgNameHR).split('_')
+            # if _name[1] == 'pr':
+            #     base_name = _name[4] + '_' + _name[5] + '_' + _name[6] + '_' + _name[7]
+            # else:
+            #     base_name = _name[3] + '_' + _name[4] + '_' + _name[5] + '_' + _name[6]
+            # self.imageOrgName.append(os.path.join(os.path.join(self.org_path, self.image_org_folder), base_name))
+            self.imageOrgName.append(_imgNameHR)
 
         self.nums_trainset = len(_imgPath)
 

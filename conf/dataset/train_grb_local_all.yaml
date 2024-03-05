@@ -5,6 +5,10 @@ img_org_path_all: '/workspace/datasets/DEFECTION_NOISE_PAPER/gt_train/'
 gt_img_path_all: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/all/index/'
 
 ### Val dataset.
-noised_img_path_val_all: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/all/'
-img_org_path_val_all: '/workspace/datasets/DEFECTION_NOISE_PAPER/gt_val/'
-gt_img_path_val_all: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/all/index/'
+#noised_img_path_val_all: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/all/'
+#img_org_path_val_all: '/workspace/datasets/DEFECTION_NOISE_PAPER/gt_val/'
+#gt_img_path_val_all: '/workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/all/index/'
+
+noised_img_path_val_all: '/workspace/datasets/DEFECTION_NOISE_PAPER/4K_image_with_all_defects/'
+img_org_path_val_all: '/workspace/datasets/DEFECTION_NOISE_PAPER/4K_image_with_all_defects/'
+gt_img_path_val_all: '/workspace/datasets/DEFECTION_NOISE_PAPER/4K_image_with_all_defects/'

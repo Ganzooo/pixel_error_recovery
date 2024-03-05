@@ -227,23 +227,26 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                     pred = _pred.data.max(1)[1][b]
                     # index = torch.where(pred==1)
 
-                    gt = _gt_patch[b]
+                    # gt = _gt_patch[b]
                     rec_img = _rec_img * 255
 
-                    acc_rec = accuracy_score(gt.cpu(), pred.cpu())
+                    # acc_rec = accuracy_score(gt.cpu(), pred.cpu())
                     # acc_rec = np.round(float(total_erro_pixel_Pred/total_erro_pixel_GT),2)
+                    acc_rec = 0.
                     acc_db.append(acc_rec)
 
                     _imgRec = rec_img[b].permute(1, 2, 0).type(torch.uint8).cpu().numpy()
-                    _imgOrg = _imageOrg_patch[b].numpy()
+                    # _imgOrg = _imageOrg_patch[b].numpy()
 
-                    psnr = psnr_calc(_imgOrg, _imgRec)
+                    # psnr = psnr_calc(_imgOrg, _imgRec)
+                    psnr = 0.
                     psnr_db.append(psnr)
 
-                    ssim_R = ssim_calc(_imgOrg[:, :, 0], _imgRec[:, :, 0], full=True)
-                    ssim_G = ssim_calc(_imgOrg[:, :, 1], _imgRec[:, :, 1], full=True)
-                    ssim_B = ssim_calc(_imgOrg[:, :, 2], _imgRec[:, :, 2], full=True)
-                    ssim = mean([ssim_R[0], ssim_G[0], ssim_B[0]])
+                    # ssim_R = ssim_calc(_imgOrg[:, :, 0], _imgRec[:, :, 0], full=True)
+                    # ssim_G = ssim_calc(_imgOrg[:, :, 1], _imgRec[:, :, 1], full=True)
+                    # ssim_B = ssim_calc(_imgOrg[:, :, 2], _imgRec[:, :, 2], full=True)
+                    # ssim = mean([ssim_R[0], ssim_G[0], ssim_B[0]])
+                    ssim = 0.
                     ssim_db.append(ssim)
 
                 fname = os.path.basename(_fname[0])

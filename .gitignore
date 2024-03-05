@@ -145,3 +145,4 @@ dataset/*
 .idea/
 multirun/*
 test/*
+test_4k/*
