@@ -1,0 +1,63 @@
+dataset:
+  noised_img_path_all: /workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/all/
+  img_org_path_all: /workspace/datasets/DEFECTION_NOISE_PAPER/gt_train/
+  gt_img_path_all: /workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_train/all/index/
+  noised_img_path_val_all: /workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/all/
+  img_org_path_val_all: /workspace/datasets/DEFECTION_NOISE_PAPER/gt_val/
+  gt_img_path_val_all: /workspace/datasets/DEFECTION_NOISE_PAPER/noise_rgb_paper_val/all/index/
+model:
+  name: plainDP
+  num_module: 8
+  activation: relu
+  channel_nums: 32
+  use_bn: true
+  rec_mode: true
+optimizer:
+  name: adam
+  lr: 0.0005
+  scheduler: CosineAnnealingWarmRestarts
+  min_lr: 1.0e-08
+  warmup_epochs: 1
+  t0_cycle: 8
+  t_mult: 2
+train_config:
+  scale: 1
+  colors: 3
+  mode: Hybrid
+  seed: 101
+  debug: false
+  description: local_train
+  comment: ${model.name}_ep_${train_config.epochs}_op_${optimizer.name}_lr_${optimizer.lr}_size_${train_config.patch_size}_loss_${losses.name}_des_${train_config.description}
+  device: cuda
+  img_save_val: true
+  pixel_recovery: true
+  save_img_rec: true
+  warm_up: true
+  db_split: false
+  patch_size: 128
+  batch_size: 64
+  batch_size_val: 1
+  data_repeat: 1
+  data_augment: 1
+  start_epoch: 0
+  epochs: 200
+  log_every: 100
+  test_every: 5
+  log_path: ./experiments
+  lr: 0.0005
+  store_in_ram: 0
+  nclass: 2
+  ignore_index: 250
+  testmodelpath: /workspace/pixel_error_recovery/models/m8_best_epoch.pt
+  pretrain: null
+  resume: null
+  mixed_pred: false
+  gpu_id: 0
+  train_threads: 4
+  val_threads: 4
+  wandb: false
+  fsize: 2
+  use_masked_loss: false
+  recovery_mode: true
+losses:
+  name: bootstrapped_cross_entropy2d

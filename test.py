@@ -201,8 +201,6 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             if warmup_cnt > 100:
                 break
 
-        cnt = 0
-
         for step, data in pbar:
             _image_patch, _gt_patch, _idx, _fname, _imageOrg_patch = data
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)

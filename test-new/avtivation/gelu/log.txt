@@ -1,0 +1,7 @@
+Accuracy mean(all) = 0.935546875
+PSNR mean(all) = 51.81052360160955
+SSIM mean(all) = 0.9996262741734777
+ALL Accuracy::: 0.935546875
+[INFO] Register count_convNd() for <class 'torch.nn.modules.conv.Conv2d'>.
+[INFO] Register count_normalization() for <class 'torch.nn.modules.batchnorm.BatchNorm2d'>.
+[INFO] Register zero_ops() for <class 'torch.nn.modules.container.Sequential'>.

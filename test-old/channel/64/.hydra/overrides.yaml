@@ -1,0 +1,2 @@
+- model.channel_nums=64
+- train_config.testmodelpath=/workspace/pixel_error_recovery/models/ch64_best_epoch.pt

@@ -1,0 +1,2 @@
+- model.ps_scale=2
+- train_config.testmodelpath=/workspace/pixel_error_recovery/models/ps_f2_best_epoch.pt

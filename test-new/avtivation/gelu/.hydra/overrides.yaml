@@ -1,0 +1,2 @@
+- model.activation=gelu
+- train_config.testmodelpath=/workspace/pixel_error_recovery/models/gelu_best_epoch.pt

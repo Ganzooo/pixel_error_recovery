@@ -1,0 +1,12 @@
+name, acc, psnr, ssim, total
+noise_cluster_2_frankfurt_000000_000294_leftImg8bit.png, 0.896484, 51.707009, 0.999623, 0.000951 
+noise_cluster_2_frankfurt_000000_000294_leftImg8bit.png, 0.896484, 51.707009, 0.999623, 0.000929 
+noise_cluster_2_frankfurt_000000_000294_leftImg8bit.png, 0.896484, 51.707009, 0.999623, 0.000924 
+noise_cluster_2_frankfurt_000000_000294_leftImg8bit.png, 0.896484, 51.707009, 0.999623, 0.000962 
+noise_cluster_2_frankfurt_000000_000294_leftImg8bit.png, 0.896484, 51.707009, 0.999623, 0.000922 
+noise_cluster_2_frankfurt_000000_000294_leftImg8bit.png, 0.896484, 51.707009, 0.999623, 0.000913 
+noise_cluster_2_frankfurt_000000_000294_leftImg8bit.png, 0.896484, 51.707009, 0.999623, 0.001018 
+noise_cluster_2_frankfurt_000000_000294_leftImg8bit.png, 0.896484, 51.707009, 0.999623, 0.000981 
+noise_cluster_2_frankfurt_000000_000294_leftImg8bit.png, 0.896484, 51.707009, 0.999623, 0.000922 
+noise_cluster_2_frankfurt_000000_000294_leftImg8bit.png, 0.896484, 51.707009, 0.999623, 0.000980 
+, 0.896484, 51.707009, 0.999623, 0.000989 
