@@ -17,3 +17,4 @@ adamp==0.3.0
 adabelief-pytorch==0.2.1
 segmentation-models-pytorch==0.2.1
 natsort
+pytorch_msssim

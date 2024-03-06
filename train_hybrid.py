@@ -13,7 +13,7 @@ from source.dataset.dataset import get_dataset
 from source.model.model import get_model
 from source.optimizer import get_optimizer, get_scheduler
 from source.utils.config import set_seed
-from source.losses import get_criterion
+from source.losses import get_criterion, bootstrapped_cross_entropy2d
 from source.utils.utils import AverageMeter
 from source.utils.image_utils import save_img
 from source.utils.metrics import runningScore
@@ -55,7 +55,7 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
     max_norm = 5.0
     
     stat_dict['epochs'] = epoch
-    
+    criterion_detection = bootstrapped_cross_entropy2d()
     for _dl in dataloader:
         name = _dl['name']
         dataloader = _dl['dataloader']
@@ -76,7 +76,7 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 
             batch_size = _image_patch.size(0)
             
-            if epoch < 5:
+            if epoch < 10:
                 model.backbonePR.required_grad = False
                 for param in model.backbonePR.children():
                     param.required_grad = False
@@ -84,6 +84,35 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 model.trasitionPR.required_grad = False
                 for param in model.trasitionPR.children():
                     param.required_grad = False
+                    
+                if cfg.train_config.mixed_pred:
+                    optimizer.zero_grad()
+                    ###Use Unscaled Gradiendts instead of 
+                    ### https://pytorch.org/docs/stable/notes/amp_examples.html#amp-examples
+                    with amp.autocast(enabled=True):
+                        _pred, _rec = model(_image_patch)
+                        loss = criterion_detection(_pred, _gt_patch)
+                        _det_loss, _rec_loss = loss, loss
+                    scaler.scale(loss).backward()
+                    
+                    # Unscales the gradients of optimizer's assigned params in-place
+                    scaler.unscale_(optimizer)
+                    # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
+
+                    # optimizer's gradients are already unscaled, so scaler.step does not unscale them,
+                    # although it still skips optimizer.step() if the gradients contain infs or NaNs.
+                    scaler.step(optimizer)
+
+                    # Updates the scale for next iteration.
+                    scaler.update()
+                else: 
+                    _pred, _rec = model(_image_patch)
+                    #loss = criterion(_pred, _gt_patch, _rec, _org_img, _mask)
+                    loss = criterion_detection(_pred, _gt_patch)
+                    loss.backward()
+                    optimizer.step()
+                    optimizer.zero_grad()
             else: 
                 model.backbonePR.required_grad = True
                 for param in model.backbonePR.children():
@@ -93,33 +122,33 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
                 for param in model.trasitionPR.children():
                     param.required_grad = True
             
-            if cfg.train_config.mixed_pred:
-                optimizer.zero_grad()
-                ###Use Unscaled Gradiendts instead of 
-                ### https://pytorch.org/docs/stable/notes/amp_examples.html#amp-examples
-                with amp.autocast(enabled=True):
+                if cfg.train_config.mixed_pred:
+                    optimizer.zero_grad()
+                    ###Use Unscaled Gradiendts instead of 
+                    ### https://pytorch.org/docs/stable/notes/amp_examples.html#amp-examples
+                    with amp.autocast(enabled=True):
+                        _pred, _rec = model(_image_patch)
+                        loss, _det_loss, _rec_loss = criterion(_pred, _gt_patch, _rec, _org_img)
+                    scaler.scale(loss).backward()
+                    
+                    # Unscales the gradients of optimizer's assigned params in-place
+                    scaler.unscale_(optimizer)
+                    # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
+
+                    # optimizer's gradients are already unscaled, so scaler.step does not unscale them,
+                    # although it still skips optimizer.step() if the gradients contain infs or NaNs.
+                    scaler.step(optimizer)
+
+                    # Updates the scale for next iteration.
+                    scaler.update()
+                else: 
                     _pred, _rec = model(_image_patch)
+                    #loss = criterion(_pred, _gt_patch, _rec, _org_img, _mask)
                     loss, _det_loss, _rec_loss = criterion(_pred, _gt_patch, _rec, _org_img)
-                scaler.scale(loss).backward()
-                
-                # Unscales the gradients of optimizer's assigned params in-place
-                scaler.unscale_(optimizer)
-                # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
-
-                # optimizer's gradients are already unscaled, so scaler.step does not unscale them,
-                # although it still skips optimizer.step() if the gradients contain infs or NaNs.
-                scaler.step(optimizer)
-
-                # Updates the scale for next iteration.
-                scaler.update()
-            else: 
-                _pred, _rec = model(_image_patch)
-                #loss = criterion(_pred, _gt_patch, _rec, _org_img, _mask)
-                loss, _det_loss, _rec_loss = criterion(_pred, _gt_patch, _rec, _org_img)
-                loss.backward()
-                optimizer.step()
-                optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+                    optimizer.zero_grad()
                 
             epoch_loss.update(loss.item(), batch_size)
             det_loss.update(_det_loss.item(), batch_size)

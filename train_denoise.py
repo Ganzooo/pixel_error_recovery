@@ -71,7 +71,7 @@ def train_one_epoch(cfg, model, optimizer, scheduler, criterion, dataloader, dev
             batch_size = _image_patch.size(0)
             
             if cfg.train_config.mixed_pred:
-                optimizer.zero_grad()
+                #optimizer.zero_grad()
                 ###Use Unscaled Gradiendts instead of 
                 ### https://pytorch.org/docs/stable/notes/amp_examples.html#amp-examples
                 with amp.autocast(enabled=True):
@@ -188,8 +188,9 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 _end_pixel_rec = time.time()
             
                 if cfg.train_config.save_img_rec:
-                    fname = os.path.basename(_fname[b])
-                    save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), pred.cpu().numpy().transpose(1,2,0).astype(np.uint8), color_domain='rgb')
+                    if _idx < 200:
+                        fname = os.path.basename(_fname[b])
+                        save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), pred.cpu().numpy().transpose(1,2,0).astype(np.uint8), color_domain='rgb')
             pbar.set_postfix(epoch=f'{epoch}', val_loss=f'{val_loss_meter.avg:0.2f}', psnr=f'{psnr:0.2f}')
         
         if cfg.train_config.pixel_recovery:

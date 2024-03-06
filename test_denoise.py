@@ -50,13 +50,10 @@ except:
 @torch.no_grad()
 def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict, run_log_wandb):
     model.eval()
-    
-    #avg_ssim = AverageMeter()
+
     count = 0
-    test_log = ""
     name = 'PER'
     
-    acc_all = []
     psnr_all = []
     ssim_all = []
     for _dl in dataloader:
@@ -67,127 +64,63 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
         pbar = tqdm(dataloader, total=len(dataloader), desc='Valid: {}'.format(name))
         count = 0
         
-        acc_db = []
         psnr_db = []
         ssim_db = []
         dirPath = "./result_image/val/{}/".format(name)
                  
-        for _image_patch, _gt_patch, _idx, _fname, _imageOrg_patch in pbar:
+        for _image_patch, _gt_patch, _idx, _fname in pbar:
             
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
             
             _start_pixel_err = time.time()
             
-            _pred, _rec_img = model(_image_patch)
-            
+            _pred = model(_image_patch)
+            val_loss = criterion(_pred, _gt_patch)
+            val_loss_meter.update(val_loss.item(), cfg.train_config.batch_size_val)
             _end_pixel_err = time.time()
             
             count += _image_patch.size(0)
             
             _imgPred = []
             _imgRec = []
-            if cfg.train_config.pixel_recovery:
-                filter_size = cfg.train_config.fsize
-                #pred = np.squeeze(_pred.data.max(1)[1].cpu().numpy(), axis=0)
-                #gt = np.squeeze(_gt_patch.data.cpu().numpy(), axis=0)
 
-                ### Pred data
-                for b in range(_pred.shape[0]):
-                    #pred = _pred.data.max(1)[1].squeeze(axis=0)
-                    pred = _pred.data.max(1)[1][b]
-                    #index = torch.where(pred==1)
-                    
-                    gt = _gt_patch[b]
-                    rec_img = _rec_img*255
-                    
-                    acc_rec = accuracy_score(gt.cpu(), pred.cpu())
-                    
-                    tn, fp, fn, tp = confusion_matrix(gt.cpu().numpy().ravel(), pred.cpu().numpy().ravel(), labels=None).ravel()
-                    _SENSIBILITY = tp / (tp+fn)
-                    _SPECIFICITY = tn / (tn+fp)
-                    _PRECISION = tp / (tp + fp)
-                    _RECALL = tp / (tp+fn)
-                    _ACC = (tp + tn) / (tp+fn+fp+tn)
+            ### Pred data
+            for b in range(_pred.shape[0]):
+                pred = _pred[b]*255
+                gt = _gt_patch[b]*255
+                
+                #acc_rec = accuracy_score(gt.cpu(), pred.cpu())
+                #acc_rec = np.round(float(total_erro_pixel_Pred/total_erro_pixel_GT),2)
+                #acc_db.append(acc_rec)
+
+                psnr = psnr_calc(pred.cpu().numpy().astype(np.uint8),gt.cpu().numpy().astype(np.uint8))
+                psnr_db.append(psnr)
     
-                    #acc_rec = np.round(float(total_erro_pixel_Pred/total_erro_pixel_GT),2)
-                    acc_db.append(_ACC)
-                    _ssim = ssim(rec_img,_imageOrg_patch.permute(0,3,1,2).cuda().to(torch.float32), size_average=True)   
-                    _imgRec = rec_img[b].permute(1,2,0).type(torch.uint8).cpu().numpy()
-                    _imgOrg = _imageOrg_patch[b]
-                    psnr = psnr_calc(_imgOrg.numpy(),_imgRec)
-                    
-                    ssim_db.append(_ssim.cpu().numpy().item())
-                    psnr_db.append(psnr)
-                    
-                    _end_pixel_rec = time.time()
+                _ssim = ssim(pred.unsqueeze(axis=0),gt.unsqueeze(axis=0), size_average=True)  
+                ssim_db.append(_ssim.cpu().numpy().item())
+                _end_pixel_rec = time.time()
 
-                    fname = os.path.basename(_fname[b])
-                    name_prefix = int(_idx[1].numpy() / 500)
-                    with open(os.path.join("result"+str(name_prefix)+".csv"), "a") as file:
-                        file.write("{},{},{},{}, {}, {}, {} \n".format(str(fname), str(acc_rec),str(psnr), str(_ssim.cpu().numpy().item()),str(_PRECISION), str(_SENSIBILITY), str(_ACC)))
-                    psnr_db.append(psnr)
-                    
-                    _end_pixel_rec = time.time()
-                
-                    if cfg.train_config.save_img_rec:
-                        #fname = str(name) + '_munster_' + str(int(_idx[b])).zfill(6) + '_000019_leftImg8bit_recover.png'
+                fname = os.path.basename(_fname[b])
+                name_prefix = int(_idx[1].numpy() / 500)
+                with open(os.path.join("result"+str(name_prefix)+".csv"), "a") as file:
+                    file.write("{},{},{},{}, {}, {}, {} \n".format(str(fname), str(0),str(psnr), str(_ssim.cpu().numpy().item()),str(0), str(0), str(0)))
+                        
+                if cfg.train_config.save_img_rec:
                         fname = os.path.basename(_fname[b])
-                        save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), _imgRec, color_domain='rgb')
-                    
-                        #with open(os.path.join(dirPath,"result.csv"), "a") as file:
-                        #    file.write("{},{},{}, {:.4f}, {:.4f}, {:.4f} \n".format(str(fname), str(acc_rec),str(psnr), (_end_pixel_rec-_start_pixel_err), (_end_pixel_err-_start_pixel_err),(_end_pixel_rec-_start_pixel_rec)))
-            
-            if cfg.train_config.img_save_val:  
-                pred = _pred.data.max(1)[1].detach().cpu().numpy()
-                #_pred.data.max(1)[1][b]
-                
-                fname = os.path.basename(_fname[0])
-                
-                _pred = pred[0]
-                _pred = np.expand_dims(_pred,axis=0)
-                _pred_one = np.squeeze(_pred,axis=0)
-                
-                _pred = np.concatenate((_pred,_pred,_pred), axis=0).transpose(1,2,0)
-                
-                _pred[_pred == 1] = 255
-                
-                # _gt = gt[0]
-                # _gt = np.expand_dims(_gt,axis=0)
-                # _gt = np.concatenate((_gt,_gt,_gt), axis=0).transpose(1,2,0)
- 
-                _pred[_pred == 0] = 0
-                _pred[_pred == 1] = 255
-                
-                # _gt[_gt == 0] = 0
-                # _gt[_gt == 1] = 255
-                
-                ### Save images
-                #temp0 = np.concatenate((_gt, _img, _pred, imgRec),axis=1)
-                temp0 = _pred
-                save_img(os.path.join(dirPath, str(epoch), fname + '.png'), temp0.astype(np.uint8), color_domain='rgb')
-            pbar.set_postfix(epoch=f'{epoch}', acc=f'{_ACC:0.4f}', psnr=f'{psnr:0.2f}')
-        
-        score, class_iou = running_metrics_val.get_scores()
-        _score=[]
-        
-        for k, v in score.items():
-           _score.append(v)
-           
-        print('Accuracy mean({}) = {}'.format(name, mean(acc_db)))
-        acc_all.append(mean(acc_db))
+                        save_img(os.path.join(dirPath, str(epoch)+'_rec', fname), pred.cpu().numpy().transpose(1,2,0).astype(np.uint8), color_domain='rgb')
+            pbar.set_postfix(epoch=f'{epoch}', val_loss=f'{val_loss_meter.avg:0.2f}', psnr=f'{psnr:0.2f}')
         
         if cfg.train_config.pixel_recovery:
             print('PSNR mean({}) = {}'.format(name, mean(psnr_db)))    
-            psnr_all.append(mean(psnr_db))
-            
             print('SSIM mean({}) = {}'.format(name, mean(ssim_db)))    
-            ssim_all.append(mean(ssim_db))  
+            
+            psnr_all.append(mean(psnr_db))
+            ssim_all.append(mean(ssim_db))
             
         running_metrics_val.reset()    
-    
-    print("ALL Accuracy:::", mean(acc_all)) 
-    return mean(acc_all)
 
+    print("Val Loss:::", val_loss_meter.avg)
+    return mean(psnr_db), mean(ssim_db), val_loss_meter.avg
 
 def run_validate(cfg, model, optimizer, scheduler, criterion, device, num_epochs, train_loader, valid_loader, model_path):
     
@@ -214,7 +147,7 @@ def run_validate(cfg, model, optimizer, scheduler, criterion, device, num_epochs
     #print("Best mIoU Score: {:.4f}".format(best_miou))
     return model
         
-@hydra.main(config_path="conf", config_name="config_detect")
+@hydra.main(config_path="conf", config_name="config_denoise")
 def validate(cfg : DictConfig) -> None:
     device = None
     if cfg.train_config.gpu_id >= 0 and torch.cuda.is_available():
@@ -248,7 +181,7 @@ def validate(cfg : DictConfig) -> None:
                                 valid_loader=valid_loader, 
                                 model_path= cfg.train_config.testmodelpath)
 
-@hydra.main(config_path="conf", config_name="config_hybrid")
+@hydra.main(config_path="conf", config_name="config_denoise")
 def torch_to_onnx(cfg : DictConfig) -> None:
     device = None
     if cfg.train_config.gpu_id >= 0 and torch.cuda.is_available():

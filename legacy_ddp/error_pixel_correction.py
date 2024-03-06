@@ -28,8 +28,8 @@ args.tar = args.tar + REC_TYPE
 if os.path.exists(args.tar):
     os.system("rm -r {}".format(args.tar))
 os.makedirs(args.tar)
-os.makedirs(args.tar + '/pr_5_0/')
-os.makedirs(args.tar + '/pr_5_0/index/')
+# os.makedirs(args.tar + '/pr_5_0/')
+# os.makedirs(args.tar + '/pr_5_0/index/')
 os.makedirs(args.tar + '/pr_0_5/')
 os.makedirs(args.tar + '/pr_0_5/index/')
 os.makedirs(args.tar + '/pr_1_0/')
@@ -44,7 +44,7 @@ os.makedirs(args.tar + '/cluster_3/')
 os.makedirs(args.tar + '/cluster_3/index/')
 
 noiseDir = []
-noiseDir.append(os.path.join(args.src_noise, 'pr_5_0'))
+#noiseDir.append(os.path.join(args.src_noise, 'pr_5_0'))
 noiseDir.append(os.path.join(args.src_noise, 'pr_0_5'))
 noiseDir.append(os.path.join(args.src_noise, 'pr_1_0'))
 noiseDir.append(os.path.join(args.src_noise, 'col_1')) 
