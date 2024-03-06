@@ -201,6 +201,8 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             if warmup_cnt > 100:
                 break
 
+        saved_img = True
+
         for step, data in pbar:
             _image_patch, _gt_patch, _idx, _fname, _imageOrg_patch = data
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
@@ -260,7 +262,9 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                                                                            ssim,
                                                                            total_latency_))
 
-                    save_img(os.path.join(dirPath, str(epoch) + '_rec', fname), _imgRec, color_domain='rgb')
+                    if saved_img:
+                        save_img(os.path.join(dirPath, str(epoch) + '_rec', fname), _imgRec, color_domain='rgb')
+                        saved_img = False
 
             pbar.set_postfix(epoch=f'{epoch}', acc=f'{acc_rec:0.4f}', psnr=f'{psnr:0.2f}', ssim=f'{ssim:0.2f}')
 

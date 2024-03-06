@@ -45,7 +45,7 @@ train_config:
     ## hardware specification
     gpu_id: 0
     train_threads: 4
-    val_threads: 4
+    val_threads: 1
     wandb: False
     fsize: 2
     use_masked_loss: False
