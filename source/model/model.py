@@ -5,6 +5,8 @@ from .DDRNet_23_slim import DualResNet_imagenet
 from .plainNetwork import plainDP, plainDP_ps, plainRP, plainHYBRID, shuffleHYBRID
 from .NAFNet import NAFNet
 from .imdn_baseline import IMDN
+from .DRUnet import UNetRes
+from .swinir import SwinIRLightDenoise
 
 
 def get_model(cfg, device):
@@ -47,9 +49,15 @@ def get_model(cfg, device):
     elif cfg.model.name == 'NAFNet':
         model = NAFNet(img_channel=cfg.model.in_channel, width=cfg.model.width, middle_blk_num=cfg.model.middle_blk_num,
                        enc_blk_nums=cfg.model.enc_blks, dec_blk_nums=cfg.model.dec_blks)
+    elif cfg.model.name == 'DRUnet':
+        model = UNetRes(in_nc=cfg.model.in_channel, out_nc=cfg.model.in_channel, nc=cfg.model.channels,
+                        nb=cfg.model.module_num, act_mode='R', downsample_mode='strideconv',
+                        upsample_mode='convtranspose')
     elif cfg.model.name == 'IMDN':
         model = IMDN(in_nc=3, out_nc=3, nc=64, nb=8, upscale=3, act_mode='L', upsample_mode='pixelshuffle',
                      negative_slope=0.05)
+    elif cfg.model.name == 'SwinIRLight':
+        model = SwinIRLightDenoise(cfg)
     else:
         raise NameError('Choose proper model name!!!')
     model.to(device)

@@ -105,6 +105,7 @@ class CustomDataSet(data.Dataset):
                                                                                         pilmode="RGB")
                 # _image, _gt = _image.rgb2ycbcr(_image)[:, :, 0:1], _gt.rgb2ycbcr(_gt)[:, :, 0:1]
                 _image = _image[:, :, 0:1]
+
         if self.train:
             # crop patch randomly
             _image_h, _image_w, _ = _image.shape

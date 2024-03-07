@@ -1,6 +1,6 @@
 hydra:
-  sweep:
-    dir: test
+    sweep:
+        dir: test
 
 defaults:
     -   dataset: train_grb_local_all #train_grb_all #train_grb #train_grb_all #demo #dataset_gray #main #server_train_rgb

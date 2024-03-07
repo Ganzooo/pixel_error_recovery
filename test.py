@@ -195,7 +195,8 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
         for data in dataloader:
             _image_patch, _gt_patch, _idx, _fname, _imageOrg_patch = data
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
-            _pred, _rec_img = model(_image_patch)
+            # _pred, _rec_img = model(_image_patch)
+            _rec_img = model(_image_patch)
             warmup_cnt += 1
 
             if warmup_cnt > 100:
@@ -208,7 +209,8 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
             _image_patch, _gt_patch = _image_patch.to(device), _gt_patch.to(device)
 
             _start_pixel_err = time.time()
-            _pred, _rec_img = model(_image_patch)
+            # _pred, _rec_img = model(_image_patch)
+            _rec_img = model(_image_patch)
             _end_pixel_err = time.time()
             total_latency_ = _end_pixel_err - _start_pixel_err
             total_latency += total_latency_
@@ -224,9 +226,9 @@ def valid_one_epoch(cfg, model, dataloader, criterion, device, epoch, stat_dict,
                 filter_size = cfg.train_config.fsize
 
                 ### Pred data
-                for b in range(_pred.shape[0]):
+                for b in range(_rec_img.shape[0]):
                     # pred = _pred.data.max(1)[1].squeeze(axis=0)
-                    pred = _pred.data.max(1)[1][b]
+                    # pred = _pred.data.max(1)[1][b]
                     # index = torch.where(pred==1)
 
                     # gt = _gt_patch[b]
@@ -329,8 +331,7 @@ def run_validate(cfg, model, optimizer, scheduler, criterion, device, num_epochs
     best_miou = -np.inf
     best_epoch = -1
 
-    print("load test model: {}!".format(model_path))
-    model.load_state_dict(torch.load(model_path, map_location='cuda:0'))
+
 
     log_name = os.path.join("log.txt")
     sys.stdout = utils_sr.ExperimentLogger(log_name, sys.stdout)
@@ -349,7 +350,7 @@ def run_validate(cfg, model, optimizer, scheduler, criterion, device, num_epochs
     return model
 
 
-@hydra.main(config_path="conf", config_name="config_detect_test")
+@hydra.main(config_path="conf", config_name="config_denoise")
 def validate(cfg: DictConfig) -> None:
     device = None
     if cfg.train_config.gpu_id >= 0 and torch.cuda.is_available():
@@ -366,6 +367,10 @@ def validate(cfg: DictConfig) -> None:
         os.makedirs(dirPath)
 
     model = get_model(cfg, device)
+    print("load test model: {}!".format(cfg.train_config.testmodelpath))
+    ckp = torch.load(cfg.train_config.testmodelpath, map_location='cuda:0')
+    model.load_state_dict(ckp)
+
     _, valid_loader = get_dataset(cfg)
     optimizer = get_optimizer(cfg, model)
     scheduler = get_scheduler(cfg, optimizer)
