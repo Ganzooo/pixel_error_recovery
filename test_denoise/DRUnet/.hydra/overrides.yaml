@@ -1,2 +1,0 @@
-- model.name=DRUnet
-- train_config.testmodelpath=/workspace/pixel_error_recovery/checkpoint/UNetRes_best_epoch.pt
